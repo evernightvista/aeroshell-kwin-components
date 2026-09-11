@@ -1,0 +1,301 @@
+/*
+    SPDX-FileCopyrightText: 2010 Fredrik Höglund <fredrik@kde.org>
+    SPDX-FileCopyrightText: 2018 Alex Nemeth <alex.nemeth329@gmail.com>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
+
+#pragma once
+
+#include <effect/effect.h>
+#include <opengl/glutils.h>
+#include <scene/item.h>
+
+#include <KConfigWatcher>
+
+#include <QList>
+#include <QColor>
+#include <QSharedMemory>
+
+#include <unordered_map>
+
+namespace KWin
+{
+
+class BackgroundEffectItem;
+
+/**
+ * Colors handed over by the KCM through the "kwinaero" shared memory segment.
+ * The KCM appends a write timestamp so the effect can tell a live preview
+ * from a stale segment left behind by a previous session (System-V shared
+ * memory survives process exits and is only cleared on reboot).
+ */
+struct SharedColorState
+{
+    int hue = 0;
+    int saturation = 0;
+    int brightness = 0;
+    int intensity = 0;
+    bool transparencyEnabled = false;
+    bool skip = false;
+    qint64 timestampMs = 0; ///< 0 when the segment has no timestamp (legacy blob)
+    bool fresh = false;     ///< true when written by a KCM within the freshness window
+};
+
+struct BlurRenderData
+{
+    /// Temporary render targets needed for the Dual Kawase algorithm, the first texture
+    /// contains not blurred background behind the window, it's cached.
+    std::vector<std::unique_ptr<GLTexture>> textures;
+    std::vector<std::unique_ptr<GLFramebuffer>> framebuffers;
+};
+
+struct BlurEffectData
+{
+    /// The region that should be blurred behind the window
+    std::optional<RegionF> content;
+
+    /// The region that should be blurred behind the frame
+    std::optional<RegionF> frame;
+
+    /**
+     * The render data per render view, as they can have different
+     *  color spaces and even different windows on them
+     */
+    std::unordered_map<RenderView *, BlurRenderData> render;
+
+    std::unique_ptr<BackgroundEffectItem> blurItem;
+};
+
+class BlurEffect : public KWin::Effect
+{
+    Q_OBJECT
+
+public:
+    BlurEffect();
+    ~BlurEffect() override;
+
+    static bool supported();
+    static bool enabledByDefault();
+
+    void reconfigure(ReconfigureFlags flags) override;
+    void prePaintScreen(ScreenPrePaintData &data) override;
+    void prePaintWindow(RenderView *view, EffectWindow *w, WindowPrePaintData &data) override;
+    void drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data) override;
+
+    // FF stuff
+    RegionF applyBlurRegion(KWin::EffectWindow *w, bool useFrame = false);
+    bool isFirefoxWindowValid(KWin::EffectWindow *w);
+
+    bool provides(Feature feature) override;
+    bool isActive() const override;
+
+    int requestedEffectChainPosition() const override
+    {
+        return 20;
+    }
+
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
+    bool blocksDirectScanout() const override;
+
+public Q_SLOTS:
+    void slotWindowAdded(KWin::EffectWindow *w);
+    void slotWindowDeleted(KWin::EffectWindow *w);
+    void slotViewRemoved(KWin::RenderView *view);
+    void setupDecorationConnections(EffectWindow *w);
+
+    void slotWindowMaximizedStateChanged(KWin::EffectWindow *w, bool horizontal, bool vertical);
+    void slotMinimizedChanged(KWin::EffectWindow *w);
+    void slotPlasmaAccentColorChanged();
+    void slotStartupAccentHeal();
+
+private:
+    void initBlurStrengthValues();
+    void configureAeroColors();
+    RegionF blurRegion(EffectWindow *w) const;
+    RegionF decorationBlurRegion(const EffectWindow *w) const;
+    bool decorationSupportsBlurBehind(const EffectWindow *w) const;
+    RegionF roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const;
+    qreal decorationCornerRadius(const EffectWindow *w) const;
+    RegionF roundedWindowRegion(const EffectWindow *w, const RegionF &baseRegion) const;
+    bool shouldBlur(const EffectWindow *w, int mask, const WindowPaintData &data) const;
+    bool shouldForceBlur(const EffectWindow *w) const;
+    bool shouldNotBlur(const EffectWindow *w) const;
+    bool shouldOpaqueColorize(const EffectWindow *w) const;
+    bool scaledOrTransformed(const EffectWindow *w, int mask, const WindowPaintData &data) const;
+    bool shouldHaveCornerGlow(const EffectWindow *w) const;
+    void updateBlurRegion(EffectWindow *w);
+    void blur(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data);
+
+    void ensureReflectTexture();
+    bool readMemory(SharedColorState &state);
+    bool treatAsActive(const EffectWindow *w);
+    QColor readPlasmaAccentColor() const;
+    void applyPlasmaAccentColor(const QColor &accentColor);
+    void updateAccentFromPlasma();
+    bool isMaximizedWindow(const EffectWindow *w) const;
+    bool hasMaximizedWindowOnScreen(const EffectWindow *reference) const;
+    bool hasMaximizedWindowOnCurrentActivity() const;
+    void updateDockBlurRegions(const EffectWindow *changedWindow);
+
+private:
+    struct
+    {
+        std::unique_ptr<GLShader> shader;
+        std::unique_ptr<GLTexture> reflectTexture;
+        std::unique_ptr<GLTexture> sideGlowTexture;
+        std::unique_ptr<GLTexture> sideGlowTexture_unfocus;
+        int mvpMatrixLocation;
+        int colorMatrixLocation;
+        int screenResolutionLocation;
+        int windowPosLocation;
+        int windowSizeLocation;
+        int windowScaleLocation;
+        int opacityLocation;
+        int translateTextureLocation;
+        int reflectTextureLocation;
+
+        // Glow
+        int glowTextureLocation;
+        int glowEnableLocation;
+        int textureSizeLocation;
+        int useWaylandLocation;
+        int glowOpacityLocation;
+    } m_reflectPass;
+    struct
+    {
+        std::unique_ptr<GLShader> shader;
+        int mvpMatrixLocation;
+        int offsetLocation;
+        int halfpixelLocation;
+        int colorMatrixLocation;
+    } m_downsamplePass;
+
+    struct
+    {
+        std::unique_ptr<GLShader> shader;
+        int mvpMatrixLocation;
+        int colorMatrixLocation;
+        int offsetLocation;
+        int halfpixelLocation;
+
+    } m_upsamplePass;
+
+    struct AeroShader
+    {
+        std::unique_ptr<GLShader> shader;
+        int mvpMatrixLocation;
+        int colorMatrixLocation;
+        int offsetLocation;
+        int halfpixelLocation;
+
+        int aeroColorRLocation;
+        int aeroColorGLocation;
+        int aeroColorBLocation;
+        int aeroColorALocation;
+        int aeroColorBalanceLocation;
+        int aeroAfterglowBalanceLocation;
+        int aeroBlurBalanceLocation;
+    };
+    enum AeroPasses { AERO = 0, BASIC, OPAQUE };
+    AeroShader m_aeroPasses[3];
+    QString aeroShaderLocations[3] = {
+        QString(":/effects/aeroblur/shaders/aero/advanced.frag"),
+        QString(":/effects/aeroblur/shaders/aero/basic.frag"),
+        QString(":/effects/aeroblur/shaders/aero/opaque.frag")
+    };
+
+    bool m_valid = false;
+    RenderView *m_currentView = nullptr;
+
+    size_t m_iterationCount; // number of times the texture will be downsized to half size
+    int m_offset;
+    int m_expandSize;
+    QStringList m_windowClasses;
+    QStringList m_noBlurWindowClasses;
+    QStringList m_windowClassesColorization;
+    QStringList m_firefoxWindows;
+
+    int m_firefoxCornerRadius;
+    int m_firefoxBlurTopMargin;
+    bool m_firefoxHollowRegion;
+
+    bool m_opaqueKrunner;
+    bool m_opaqueOSD;
+    bool m_blurMatching;
+    bool m_blurNonMatching;
+    bool m_blurMenus;
+    bool m_blurDocks;
+    bool m_paintAsTranslucent;
+
+    QString m_texturePath;
+    bool m_translateTexture;
+
+    int m_reflectionIntensity;
+    int m_aeroIntensity;
+    int m_aeroHue;
+    int m_aeroSaturation;
+    int m_aeroBrightness;
+
+    float m_aeroColorR;
+    float m_aeroColorG;
+    float m_aeroColorB;
+    float m_aeroColorA;
+
+    float m_aeroColorROpaque;
+    float m_aeroColorGOpaque;
+    float m_aeroColorBOpaque;
+
+    int m_aeroPrimaryBalance;
+    int m_aeroSecondaryBalance;
+    int m_aeroBlurBalance;
+
+    int m_aeroPrimaryBalanceInactive;
+    int m_aeroBlurBalanceInactive;
+
+    bool m_transparencyEnabled;
+    bool m_basicColorization;
+    bool m_maximizeColorization;
+    bool m_enableCornerGlow;
+    bool m_followPlasmaAccentColor;
+
+    struct OffsetStruct
+    {
+        float minOffset;
+        float maxOffset;
+        int expandSize;
+    };
+
+    QList<OffsetStruct> blurOffsets;
+
+    struct BlurValuesStruct
+    {
+        int iteration;
+        float offset;
+    };
+
+    QList<BlurValuesStruct> blurStrengthValues;
+
+    QMap<EffectWindow *, QMetaObject::Connection> windowBlurChangedConnections;
+    QMap<EffectWindow *, QMetaObject::Connection> windowExpandedGeometryChangedConnections;
+    std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
+
+    QSharedMemory m_sharedMemory;
+
+    // Plasma accent color tracking
+    QColor m_lastPlasmaAccentColor;
+    QTimer *m_plasmaAccentColorTimer = nullptr;
+    KConfigWatcher::Ptr m_accentConfigWatcher;
+    bool m_accentAppliedOnce = false;
+};
+
+inline bool BlurEffect::provides(Effect::Feature feature)
+{
+    if (feature == Blur) {
+        return true;
+    }
+    return KWin::Effect::provides(feature);
+}
+
+} // namespace KWin

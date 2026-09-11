@@ -5,12 +5,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(PROJECT_VERSION "6.7.0")
+set(PROJECT_VERSION "6.8.0")
 set(PROJECT_VERSION_MAJOR 6)
-set(KF6_MIN_VERSION "6.0.0")
+set(KF6_MIN_VERSION "6.3.0")
 
 option(KWIN_INSTALL_MISC "Install miscellaneous components" ON)
-option(KWIN_BUILD_WAYLAND "Build with Wayland support" OFF)
 
 find_package(ECM ${KF6_MIN_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
@@ -39,19 +38,9 @@ find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
 
 find_package(KDecoration3 REQUIRED)
 
-if(KWIN_BUILD_WAYLAND)
-    find_package(KWin REQUIRED COMPONENTS
-        kwineffects
-    )
-else()
-    find_package(X11 REQUIRED)
-    find_package(XCB REQUIRED COMPONENTS XCB)
-
-    find_package(KWinX11 REQUIRED COMPONENTS
-        kwineffects
-    )
-endif()
-
+find_package(KWin REQUIRED COMPONENTS
+    kwineffects
+)
 
 find_package(KWinDBusInterface CONFIG REQUIRED)
 
@@ -73,10 +62,14 @@ if(KWIN_INSTALL_MISC)
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/kwin/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/kwin)
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/outline DESTINATION ${CMAKE_INSTALL_PREFIX}/share/aeroshell)
     add_subdirectory(rules)
-    ki18n_install(po)
 else()
     message(STATUS "Skipping other KWin components")
 endif()
+
+# Translation catalogs belong to the effects and their KCMs as well.  Keep
+# them installed when a minimal build disables the optional miscellaneous
+# components.
+ki18n_install(po)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 

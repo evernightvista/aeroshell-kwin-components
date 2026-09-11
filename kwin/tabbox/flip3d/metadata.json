@@ -99,6 +99,12 @@
         "Icon": "preferences-system-windows-effect-flipswitch",
         "Id": "flip3d",
         "License": "GPL",
-        "Name": "Flip 3D"
+        "Name": "Flip 3D",
+        "Name[de]": "3D-Flip",
+        "Name[fr]": "Retournement 3D",
+        "Name[ja]": "3D フリップ",
+        "Name[ko]": "3D 플립",
+        "Name[zh_CN]": "3D 翻转",
+        "Name[zh_TW]": "3D 翻轉"
     }
 }

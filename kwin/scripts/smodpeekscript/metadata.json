@@ -11,7 +11,19 @@
         "Icon": "preferences-system-windows-script-test",
         "Id": "smodpeekscript",
         "License": "GPL",
-        "Name": "SMOD Peek"
+        "Name": "SMOD Peek",
+        "Name[de]": "SMOD-Peek",
+        "Name[fr]": "Aperçu SMOD",
+        "Name[ja]": "SMOD ピーク",
+        "Name[ko]": "SMOD 피크",
+        "Name[zh_CN]": "SMOD 速览",
+        "Name[zh_TW]": "SMOD 速覽",
+        "Description[de]": "SMOD-Peek-Skript",
+        "Description[fr]": "Script d'aperçu SMOD",
+        "Description[ja]": "SMOD ピークスクリプト",
+        "Description[ko]": "SMOD 피크 스크립트",
+        "Description[zh_CN]": "SMOD 速览脚本",
+        "Description[zh_TW]": "SMOD 速覽指令碼"
     },
     "X-Plasma-API": "declarativescript",
     "X-Plasma-MainScript": "ui/main.qml"

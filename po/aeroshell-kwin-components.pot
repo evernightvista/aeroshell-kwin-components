@@ -302,6 +302,14 @@ msgstr ""
 msgid "100%"
 msgstr ""
 
+#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:272
+#. i18n: ectx: property (text), widget (QCheckBox, kcfg_FollowPlasmaAccentColor)
+#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:272
+#. i18n: ectx: property (text), widget (QCheckBox, kcfg_FollowPlasmaAccentColor)
+#, kde-format
+msgid "Follow KDE Plasma accent color"
+msgstr ""
+
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:278
 #. i18n: ectx: property (text), widget (QLabel, showAccentColor_label)
 #. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:278

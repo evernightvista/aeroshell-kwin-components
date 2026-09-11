@@ -48,7 +48,13 @@
         "Id": "thumbnail_aero",
         "License": "AGPLv3",
         "Name": "Thumbnail Aero",
-        "Name[pl]": "Miniatury Aero"
+        "Name[de]": "Miniaturansichten Aero",
+        "Name[fr]": "Vignettes Aero",
+        "Name[ja]": "サムネイル Aero",
+        "Name[ko]": "축소판 에어로",
+        "Name[pl]": "Miniatury Aero",
+        "Name[zh_CN]": "缩略图 Aero",
+        "Name[zh_TW]": "縮圖 Aero"
     },
     "X-Plasma-API": "declarativeappletscript"
 }

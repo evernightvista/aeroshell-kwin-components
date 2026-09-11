@@ -90,7 +90,13 @@
         "Icon": "preferences-system-windows-effect-squash",
         "Id": "squashaero",
         "License": "GPL",
-        "Name": "Squash Aero"
+        "Name": "Squash Aero",
+        "Name[de]": "Aero-Stauchung",
+        "Name[fr]": "Écrasement Aero",
+        "Name[ja]": "スクワッシュエアロ",
+        "Name[ko]": "스쿼시 에어로",
+        "Name[zh_CN]": "挤压动效",
+        "Name[zh_TW]": "擠壓動畫"
     },
     "X-KDE-Ordering": 60,
     "X-KWin-Exclusive-Category": "minimize",

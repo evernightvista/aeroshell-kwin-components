@@ -1,0 +1,27 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Souris"
+            }
+        ],
+        "Category": "AeroShell",
+        "Description": "Show an animation when a resizable window is dragged to a screen edge",
+        "Description[de]": "Zeigt eine Animation an, wenn ein in der Größe veränderbares Fenster an einen Bildschirmrand gezogen wird",
+        "Description[fr]": "Affiche une animation lorsqu'une fenêtre redimensionnable est glissée vers un bord de l'écran",
+        "Description[ja]": "サイズ変更可能なウィンドウを画面の端にドラッグするとアニメーションを表示します",
+        "Description[ko]": "크기 조절 가능한 창을 화면 가장자리로 끌면 애니메이션을 표시합니다",
+        "Description[pl]": "Pokazuj animacje gdy modyfikowalne okno jest przyciągane do krawędzi ekranu",
+        "Description[zh_CN]": "当可调整大小的窗口被拖到屏幕边缘时显示动画",
+        "Description[zh_TW]": "當可調整大小的視窗被拖曳到螢幕邊緣時顯示動畫",
+        "EnabledByDefault": false,
+        "License": "GPL",
+        "Name": "SMOD Snap",
+        "Name[de]": "SMOD-Einrasten",
+        "Name[fr]": "Aimantation SMOD",
+        "Name[ja]": "SMOD スナップ",
+        "Name[ko]": "SMOD 스냅",
+        "Name[zh_CN]": "SMOD 吸附",
+        "Name[zh_TW]": "SMOD 貼齊"
+    }
+}

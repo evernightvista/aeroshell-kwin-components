@@ -1,7 +1,7 @@
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# aeroshell-kwin-components Korean translation.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the aeroshell-kwin-components package.
 #
-# SPDX-FileCopyrightText: 2026 Ivan Mitenkov <m1t3nk0v@internet.ru>
 msgid ""
 msgstr ""
 "Project-Id-Version: aeroshell-kwin-components\n"
@@ -9,21 +9,19 @@ msgstr ""
 "components/-/issues\n"
 "POT-Creation-Date: 2026-03-04 18:05+0100\n"
 "PO-Revision-Date: 2026-09-11 14:00+0800\n"
-"Last-Translator:  Ivan Mitenkov <m1t3nk0v@internet.ru>\n"
-"Language-Team: Russian <>\n"
-"Language: ru\n"
+"Last-Translator: Anonymous <noreply@localhost>\n"
+"Language-Team: Korean <ko@li.org>\n"
+"Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Lokalize 25.12.3\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:122
 #: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:126
 #, kde-format
 msgid "Change the color of your window borders, Start menu, and taskbar"
-msgstr "Изменить цвет границ окон, меню \"Пуск\" и панели задач"
+msgstr "창 테두리, 시작 메뉴 및 작업 표시줄의 색상을 변경합니다"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:218
 #. i18n: ectx: property (text), widget (QLabel, color_name_label)
@@ -36,24 +34,24 @@ msgstr "Изменить цвет границ окон, меню \"Пуск\" �
 #: rc.cpp:191 rc.cpp:413
 #, no-c-format, kde-format
 msgid "Current color: %1"
-msgstr "Текущий цвет: %1"
+msgstr "현재 색상: %1"
 
 #: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:390
 #: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:396
 #, kde-format
 msgid "Hide color mixer"
-msgstr "Скрыть настройку цветов"
+msgstr "색상 혼합기 숨기기"
 
 #: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:391
 #: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:397
 #, kde-format
 msgid "Show color mixer"
-msgstr "Показать настройку цветов"
+msgstr "색상 혼합기 표시"
 
 #: kwin/tabbox/thumbnail_aero/contents/ui/main.qml:110
 #, kde-format
 msgid "Desktop"
-msgstr "Рабочий стол"
+msgstr "바탕 화면"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide.kcfg:13
 #. i18n: ectx: label, entry (AccurateTilt), group (Effect-glide)
@@ -62,9 +60,7 @@ msgstr "Рабочий стол"
 #: rc.cpp:3 rc.cpp:225
 #, kde-format
 msgid "Enables a more accurate tilt effect at a very minor performance cost."
-msgstr ""
-"Включает более точный эффект наклона при незначительном снижении "
-"производительности."
+msgstr "약간의 성능 저하를 대가로 더 정확한 기울임 효과를 사용합니다."
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:19
 #. i18n: ectx: property (text), widget (QLabel, label_Duration)
@@ -73,7 +69,7 @@ msgstr ""
 #: rc.cpp:6 rc.cpp:228
 #, kde-format
 msgid "Duration:"
-msgstr "Продолжительность:"
+msgstr "지속 시간:"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:32
 #. i18n: ectx: property (specialValueText), widget (QSpinBox, kcfg_Duration)
@@ -82,7 +78,7 @@ msgstr "Продолжительность:"
 #: rc.cpp:9 rc.cpp:231
 #, kde-format
 msgid "Default"
-msgstr "Стандартная"
+msgstr "기본값"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:35
 #. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_Duration)
@@ -91,7 +87,7 @@ msgstr "Стандартная"
 #: rc.cpp:12 rc.cpp:234
 #, kde-format
 msgid " milliseconds"
-msgstr " миллисекунд"
+msgstr " 밀리초"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:50
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_AccurateTilt)
@@ -100,7 +96,7 @@ msgstr " миллисекунд"
 #: rc.cpp:15 rc.cpp:237
 #, kde-format
 msgid "Enable a more accurate tilt effect."
-msgstr "Включить более точный эффект наклона."
+msgstr "더 정확한 기울임 효과를 사용합니다."
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:60
 #. i18n: ectx: property (title), widget (QGroupBox, groupBox_InAnimation)
@@ -109,7 +105,7 @@ msgstr "Включить более точный эффект наклона."
 #: rc.cpp:18 rc.cpp:240
 #, kde-format
 msgid "Window Open Animation"
-msgstr "Анимация открытия окна"
+msgstr "창 열기 애니메이션"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:66
 #. i18n: ectx: property (text), widget (QLabel, label_InRotationEdge)
@@ -122,7 +118,7 @@ msgstr "Анимация открытия окна"
 #: rc.cpp:21 rc.cpp:45 rc.cpp:243 rc.cpp:267
 #, kde-format
 msgid "Rotation edge:"
-msgstr "Край вращения:"
+msgstr "회전 가장자리:"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:80
 #. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
@@ -135,7 +131,7 @@ msgstr "Край вращения:"
 #: rc.cpp:24 rc.cpp:48 rc.cpp:246 rc.cpp:270
 #, kde-format
 msgid "Top"
-msgstr "Верхний"
+msgstr "위"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:85
 #. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
@@ -148,7 +144,7 @@ msgstr "Верхний"
 #: rc.cpp:27 rc.cpp:51 rc.cpp:249 rc.cpp:273
 #, kde-format
 msgid "Right"
-msgstr "Правый"
+msgstr "오른쪽"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:90
 #. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
@@ -161,7 +157,7 @@ msgstr "Правый"
 #: rc.cpp:30 rc.cpp:54 rc.cpp:252 rc.cpp:276
 #, kde-format
 msgid "Bottom"
-msgstr "Нижний"
+msgstr "아래"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:95
 #. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
@@ -174,7 +170,7 @@ msgstr "Нижний"
 #: rc.cpp:33 rc.cpp:57 rc.cpp:255 rc.cpp:279
 #, kde-format
 msgid "Left"
-msgstr "Левый"
+msgstr "왼쪽"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:103
 #. i18n: ectx: property (text), widget (QLabel, label_InRotationAngle)
@@ -187,7 +183,7 @@ msgstr "Левый"
 #: rc.cpp:36 rc.cpp:60 rc.cpp:258 rc.cpp:282
 #, kde-format
 msgid "Rotation angle:"
-msgstr "Угол вращения:"
+msgstr "회전 각도:"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:129
 #. i18n: ectx: property (text), widget (QLabel, label_InDistance)
@@ -200,7 +196,7 @@ msgstr "Угол вращения:"
 #: rc.cpp:39 rc.cpp:63 rc.cpp:261 rc.cpp:285
 #, kde-format
 msgid "Distance:"
-msgstr "Расстояние:"
+msgstr "거리:"
 
 #. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:158
 #. i18n: ectx: property (title), widget (QGroupBox, groupBox_OutAnimation)
@@ -209,7 +205,7 @@ msgstr "Расстояние:"
 #: rc.cpp:42 rc.cpp:264
 #, kde-format
 msgid "Window Close Animation"
-msgstr "Анимация закрытия окна"
+msgstr "창 닫기 애니메이션"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:27
 #. i18n: ectx: attribute (title), widget (QWidget, blurWidget)
@@ -219,7 +215,7 @@ msgstr "Анимация закрытия окна"
 #, kde-format
 msgctxt "Appearance tab in the blur KCM"
 msgid "Appearance"
-msgstr "Внешний вид"
+msgstr "모양"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:33
 #. i18n: ectx: property (text), widget (QLabel, labelConstantBlurDescription)
@@ -228,7 +224,7 @@ msgstr "Внешний вид"
 #: rc.cpp:69 rc.cpp:291
 #, kde-format
 msgid "Blur strength:"
-msgstr "Сила размытия:"
+msgstr "흐림 강도:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:58
 #. i18n: ectx: property (text), widget (QLabel, labelConstantBlurLight)
@@ -238,7 +234,7 @@ msgstr "Сила размытия:"
 #, kde-format
 msgctxt "Low blur strength"
 msgid "Light"
-msgstr "Лёгкое"
+msgstr "약하게"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:90
 #. i18n: ectx: property (text), widget (QLabel, labelConstantBlurStrong)
@@ -248,7 +244,7 @@ msgstr "Лёгкое"
 #, kde-format
 msgctxt "High blur strength"
 msgid "Strong"
-msgstr "Сильное"
+msgstr "강하게"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:161
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableTransparency)
@@ -257,7 +253,7 @@ msgstr "Сильное"
 #: rc.cpp:78 rc.cpp:300
 #, kde-format
 msgid "Enable Transparency"
-msgstr "Включить прозрачность"
+msgstr "투명도 사용"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:174
 #. i18n: ectx: property (text), widget (QLabel, label)
@@ -266,7 +262,7 @@ msgstr "Включить прозрачность"
 #: rc.cpp:81 rc.cpp:303
 #, kde-format
 msgid "Reflection texture:"
-msgstr "Текстура отражения:"
+msgstr "반사 텍스처:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:190
 #. i18n: ectx: property (toolTip), widget (QPushButton, browse_pushButton)
@@ -275,7 +271,7 @@ msgstr "Текстура отражения:"
 #: rc.cpp:84 rc.cpp:306
 #, kde-format
 msgid "Browse..."
-msgstr "Обзор..."
+msgstr "찾아보기..."
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:203
 #. i18n: ectx: property (toolTip), widget (QPushButton, clear_pushButton)
@@ -285,7 +281,7 @@ msgstr "Обзор..."
 #, kde-format
 msgctxt "Reset the reflection texture"
 msgid "Clear"
-msgstr "Очистить"
+msgstr "지우기"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:218
 #. i18n: ectx: property (text), widget (QLabel, label_2)
@@ -294,7 +290,7 @@ msgstr "Очистить"
 #: rc.cpp:90 rc.cpp:312
 #, kde-format
 msgid "Reflection intensity:"
-msgstr "Интенсивность отражения:"
+msgstr "반사 강도:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:256
 #. i18n: ectx: property (text), widget (QLabel, reflectionLabel)
@@ -311,7 +307,7 @@ msgstr "100%"
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_FollowPlasmaAccentColor)
 #, kde-format
 msgid "Follow KDE Plasma accent color"
-msgstr "Следовать акцентному цвету KDE Plasma"
+msgstr "KDE Plasma 강조 색상 따르기"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:278
 #. i18n: ectx: property (text), widget (QLabel, showAccentColor_label)
@@ -321,7 +317,7 @@ msgstr "Следовать акцентному цвету KDE Plasma"
 #, kde-format
 msgctxt "Don't change the HTML markup, just the human-readable text"
 msgid "<a href=\"no\">Change accent color</a>"
-msgstr "<a href=\"no\">Изменить цвет выделения</a>"
+msgstr "<a href=\"no\">강조 색상 변경</a>"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:285
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_TranslateTexture)
@@ -330,7 +326,7 @@ msgstr "<a href=\"no\">Изменить цвет выделения</a>"
 #: rc.cpp:100 rc.cpp:322
 #, kde-format
 msgid "Move the reflection texture along with the window"
-msgstr "Перемещать текстуру отражения вместе с окном"
+msgstr "반사 텍스처를 창과 함께 이동"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:295
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_BasicColorization)
@@ -339,7 +335,7 @@ msgstr "Перемещать текстуру отражения вместе с
 #: rc.cpp:103 rc.cpp:325
 #, kde-format
 msgid "Enable basic colorization"
-msgstr "Включить базовую раскраску"
+msgstr "기본 색상화 사용"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:302
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_MaximizeColorization)
@@ -348,7 +344,7 @@ msgstr "Включить базовую раскраску"
 #: rc.cpp:106 rc.cpp:328
 #, kde-format
 msgid "Enable opaque colorization for maximized windows"
-msgstr "Включить непрозрачную раскраску для распахнутых окон"
+msgstr "최대화된 창에 불투명 색상화 사용"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:309
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableCornerGlow)
@@ -357,7 +353,7 @@ msgstr "Включить непрозрачную раскраску для ра
 #: rc.cpp:109 rc.cpp:331
 #, kde-format
 msgid "Display corner glow textures"
-msgstr "Отображать текстуры свечения углов"
+msgstr "모서리 광택 텍스처 표시"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:330
 #. i18n: ectx: attribute (title), widget (QWidget, forceBlurWidget)
@@ -367,7 +363,7 @@ msgstr "Отображать текстуры свечения углов"
 #, kde-format
 msgctxt "Overrides tab in the blur KCM"
 msgid "Overrides"
-msgstr "Переопределения"
+msgstr "재정의"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:339
 #. i18n: ectx: property (text), widget (QLabel, classLabel)
@@ -376,7 +372,7 @@ msgstr "Переопределения"
 #: rc.cpp:115 rc.cpp:337
 #, kde-format
 msgid "Classes of windows to force blur:"
-msgstr "Классы окон для принудительного размытия:"
+msgstr "흐림을 강제 적용할 창 클래스:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:346
 #. i18n: ectx: property (text), widget (QLabel, label_3)
@@ -385,7 +381,7 @@ msgstr "Классы окон для принудительного размыт
 #: rc.cpp:118 rc.cpp:340
 #, kde-format
 msgid "Classes of Firefox windows to apply custom blur:"
-msgstr "Классы окон Firefox для настраиваемого размытия:"
+msgstr "사용자 지정 흐림을 적용할 Firefox 창 클래스:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:353
 #. i18n: ectx: property (text), widget (QLabel, label_noblur)
@@ -394,7 +390,7 @@ msgstr "Классы окон Firefox для настраиваемого раз
 #: rc.cpp:121 rc.cpp:343
 #, kde-format
 msgid "Classes of windows to not apply blur (regex):"
-msgstr "Классы окон, которые не нужно размывать (рег. выр.):"
+msgstr "흐림을 적용하지 않을 창 클래스(정규식):"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:360
 #. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_WindowClasses)
@@ -411,7 +407,7 @@ msgstr "Классы окон, которые не нужно размывать
 #: rc.cpp:124 rc.cpp:127 rc.cpp:130 rc.cpp:346 rc.cpp:349 rc.cpp:352
 #, kde-format
 msgid "One window class per line."
-msgstr "Один класс окна на строку."
+msgstr "줄마다 창 클래스 하나를 입력하십시오."
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:386
 #. i18n: ectx: property (text), widget (QRadioButton, kcfg_BlurMatching)
@@ -420,7 +416,7 @@ msgstr "Один класс окна на строку."
 #: rc.cpp:133 rc.cpp:355
 #, kde-format
 msgid "Apply force blur list"
-msgstr "Применить список принудительного размытия"
+msgstr "강제 흐림 목록 적용"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:395
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_BlurMenus)
@@ -429,7 +425,7 @@ msgstr "Применить список принудительного разм�
 #: rc.cpp:136 rc.cpp:358
 #, kde-format
 msgid "Blur menus"
-msgstr "Размывать меню"
+msgstr "메뉴 흐림 처리"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:402
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_BlurDocks)
@@ -439,7 +435,7 @@ msgstr "Размывать меню"
 #, kde-format
 msgctxt "Blur windows that have a 'dock' type"
 msgid "Blur docks"
-msgstr "Размывать док-панели"
+msgstr "독 흐림 처리"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:409
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_OpaqueKrunner)
@@ -448,7 +444,7 @@ msgstr "Размывать док-панели"
 #: rc.cpp:142 rc.cpp:364
 #, kde-format
 msgid "Make KRunner opaque"
-msgstr "Отключить прозрачность окон KRunner"
+msgstr "KRunner를 불투명하게 만들기"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:416
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_OpaqueOSD)
@@ -458,7 +454,7 @@ msgstr "Отключить прозрачность окон KRunner"
 #, kde-format
 msgctxt "Toggle opaqueness for OSDs"
 msgid "Make on screen displays opaque"
-msgstr "Отключить прозрачность экранных дисплеев"
+msgstr "화면 표시(OSD)를 불투명하게 만들기"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:423
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_PaintAsTranslucent)
@@ -468,9 +464,7 @@ msgstr "Отключить прозрачность экранных диспл�
 #, kde-format
 msgid ""
 "Paint windows as non-opaque (fixes artifacts for some transparent windows)"
-msgstr ""
-"Отображать окна как непрозрачные (исправляет артефакты для некоторых "
-"прозрачных окон)"
+msgstr "창을 불투명하지 않게 그립니다(일부 투명 창의 아티팩트 수정)"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:430
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_FirefoxHollowRegion)
@@ -481,9 +475,7 @@ msgstr ""
 msgid ""
 "Don't render blur on the inside of Firefox windows (disabling this reduces "
 "performance)"
-msgstr ""
-"Не отображать размытие внутри окон Firefox (отключение этого параметра "
-"снижает производительность)"
+msgstr "Firefox 창 내부에 흐림을 렌더링하지 않음(비활성화하면 성능이 저하됨)"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:450
 #. i18n: ectx: property (text), widget (QLabel, label_4)
@@ -492,7 +484,7 @@ msgstr ""
 #: rc.cpp:154 rc.cpp:376
 #, kde-format
 msgid "Firefox blur corner radius (radius gets DPI scaled by the effect)"
-msgstr "Радиус углов размытия окна Firefox (адаптируется к масштабу экрана)"
+msgstr "Firefox 흐림 모서리 반경(반경은 효과에 따라 DPI 배율이 적용됨)"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:469
 #. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_FirefoxBlurTopMargin)
@@ -502,7 +494,7 @@ msgstr "Радиус углов размытия окна Firefox (адапти�
 #, kde-format
 msgctxt "Pixel unit suffix"
 msgid "px"
-msgstr "пт"
+msgstr "px"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:482
 #. i18n: ectx: property (text), widget (QLabel, label_5)
@@ -511,7 +503,7 @@ msgstr "пт"
 #: rc.cpp:160 rc.cpp:382
 #, kde-format
 msgid "Firefox blur top margin"
-msgstr "Верхний край размытия окна Firefox"
+msgstr "Firefox 흐림 위쪽 여백"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:499
 #. i18n: ectx: property (text), widget (QLabel, label_19)
@@ -520,7 +512,7 @@ msgstr "Верхний край размытия окна Firefox"
 #: rc.cpp:163 rc.cpp:385
 #, kde-format
 msgid "Intensity:"
-msgstr "Интенсивность:"
+msgstr "강도:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:506
 #. i18n: ectx: property (text), widget (QLabel, label_18)
@@ -533,7 +525,7 @@ msgstr "Интенсивность:"
 #: rc.cpp:166 rc.cpp:210 rc.cpp:388 rc.cpp:432
 #, kde-format
 msgid "Hue:"
-msgstr "Оттенок:"
+msgstr "색조:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:513
 #. i18n: ectx: property (text), widget (QLabel, label_17)
@@ -546,7 +538,7 @@ msgstr "Оттенок:"
 #: rc.cpp:169 rc.cpp:213 rc.cpp:391 rc.cpp:435
 #, kde-format
 msgid "Saturation:"
-msgstr "Насыщенность:"
+msgstr "채도:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:520
 #. i18n: ectx: property (text), widget (QLabel, label_16)
@@ -559,7 +551,7 @@ msgstr "Насыщенность:"
 #: rc.cpp:172 rc.cpp:207 rc.cpp:394 rc.cpp:429
 #, kde-format
 msgid "Brightness:"
-msgstr "Яркость:"
+msgstr "밝기:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:527
 #. i18n: ectx: property (text), widget (QLabel, label_15)
@@ -568,7 +560,7 @@ msgstr "Яркость:"
 #: rc.cpp:175 rc.cpp:397
 #, kde-format
 msgid "Red:"
-msgstr "Красный:"
+msgstr "빨강:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:534
 #. i18n: ectx: property (text), widget (QLabel, label_14)
@@ -577,7 +569,7 @@ msgstr "Красный:"
 #: rc.cpp:178 rc.cpp:400
 #, kde-format
 msgid "Green:"
-msgstr "Зелёный:"
+msgstr "초록:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:541
 #. i18n: ectx: property (text), widget (QLabel, label_13)
@@ -586,7 +578,7 @@ msgstr "Зелёный:"
 #: rc.cpp:181 rc.cpp:403
 #, kde-format
 msgid "Blue:"
-msgstr "Синий:"
+msgstr "파랑:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:548
 #. i18n: ectx: property (text), widget (QLabel, label_12)
@@ -595,7 +587,7 @@ msgstr "Синий:"
 #: rc.cpp:184 rc.cpp:406
 #, kde-format
 msgid "Color Balance:"
-msgstr "Цветовой баланс:"
+msgstr "색상 균형:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:154
 #. i18n: ectx: property (text), widget (QLabel, colorPaletteLabel)
@@ -604,7 +596,7 @@ msgstr "Цветовой баланс:"
 #: rc.cpp:187 rc.cpp:409
 #, kde-format
 msgid "Color Palette:"
-msgstr "Цветовая палитра:"
+msgstr "색상 팔레트:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:244
 #. i18n: ectx: property (toolTip), widget (QCheckBox, kcfg_EnableTransparency)
@@ -616,8 +608,8 @@ msgid ""
 "Enables/disables the transparency of the entire theme. \n"
 "NOTE: This setting does NOT affect compositing settings."
 msgstr ""
-"Включает/отключает прозрачность всей темы. \n"
-"ПРИМЕЧАНИЕ: Этот параметр НЕ влияет на параметры композитинга."
+"전체 테마의 투명도를 사용/사용 안 함. \n"
+"참고: 이 설정은 합성(compositing) 설정에는 영향을 주지 않습니다."
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:247
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableTransparency)
@@ -626,7 +618,7 @@ msgstr ""
 #: rc.cpp:198 rc.cpp:420
 #, kde-format
 msgid "Enable transparency"
-msgstr "Включить прозрачность"
+msgstr "투명도 사용"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:284
 #. i18n: ectx: property (text), widget (QLabel, label)
@@ -635,7 +627,7 @@ msgstr "Включить прозрачность"
 #: rc.cpp:201 rc.cpp:423
 #, kde-format
 msgid "Color intensity:"
-msgstr "Интенсивность цвета:"
+msgstr "색상 강도:"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:369
 #. i18n: ectx: property (text), widget (QLabel, colorMixerLabel)
@@ -645,7 +637,7 @@ msgstr "Интенсивность цвета:"
 #, kde-format
 msgctxt "Don't change the HTML markup, just the human-readable text"
 msgid "<a href=\"no\" style=\"color: #0066D4\">Show color mixer</a>"
-msgstr "<a href=\"no\" style=\"color: #0066D4\">Показать настройку цветов</a>"
+msgstr "<a href=\"no\" style=\"color: #0066D4\">색상 혼합기 표시</a>"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:744
 #. i18n: ectx: property (text), widget (QPushButton, apply_Button)
@@ -654,7 +646,7 @@ msgstr "<a href=\"no\" style=\"color: #0066D4\">Показать настрой�
 #: rc.cpp:216 rc.cpp:438
 #, kde-format
 msgid "Apply"
-msgstr "Применить"
+msgstr "적용"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:769
 #. i18n: ectx: property (text), widget (QPushButton, saveChanges_Button)
@@ -663,7 +655,7 @@ msgstr "Применить"
 #: rc.cpp:219 rc.cpp:441
 #, kde-format
 msgid "Save Changes"
-msgstr "Сохранить изменения"
+msgstr "변경 사항 저장"
 
 #. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:794
 #. i18n: ectx: property (text), widget (QPushButton, cancel_Button)
@@ -672,11 +664,11 @@ msgstr "Сохранить изменения"
 #: rc.cpp:222 rc.cpp:444
 #, kde-format
 msgid "Cancel"
-msgstr "Отмена"
+msgstr "취소"
 
 #. i18n: file: kwin/effects/loginaero/contents/ui/config.ui:17
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_FadeToBlack)
 #: rc.cpp:447
 #, kde-format
 msgid "Fade to black (fullscreen splash screens only)"
-msgstr "Затемнение (только полноэкранные заставки)"
+msgstr "검은색으로 페이드아웃(전체 화면 시작 화면만 해당)"

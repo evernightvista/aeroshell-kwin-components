@@ -1,0 +1,29 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "WackyIdeas"
+            }
+        ],
+        "Category": "AeroShell",
+        "Description": "Blurs the background behind windows in the style of Windows 7 and Vista. Conflicts with the original blur effect!",
+        "Description[de]": "Verwischt den Hintergrund hinter Fenstern im Stil von Windows 7 und Vista. Kollidiert mit dem ursprünglichen Unschärfeeffekt!",
+        "Description[fr]": "Floute l'arrière-plan des fenêtres dans le style de Windows 7 et Vista. Entre en conflit avec l'effet de flou d'origine !",
+        "Description[ja]": "Windows 7 および Vista のスタイルでウィンドウの背後をぼかします。元のぼかし効果と競合します！",
+        "Description[ko]": "Windows 7 및 Vista 스타일로 창 뒤의 배경을 흐리게 합니다. 원래 흐림 효과와 충돌합니다!",
+        "Description[pl]": "Rozmywa tło za oknem w stylu Windows 7 i Vista. Konfliktuje z oryginalnym efektem rozmycia!",
+        "Description[zh_CN]": "以 Windows 7 和 Vista 的风格模糊窗口背景。与原始模糊效果冲突！",
+        "Description[zh_TW]": "以 Windows 7 和 Vista 的風格模糊視窗背景。與原始模糊效果衝突！",
+        "EnabledByDefault": false,
+        "License": "GPL",
+        "Name": "Aero Glass Blur",
+        "Name[de]": "Aero-Glas-Unschärfe",
+        "Name[fr]": "Flou de verre Aero",
+        "Name[ja]": "Aero ガラスぼかし",
+        "Name[ko]": "에어로 글래스 흐림",
+        "Name[pl]": "Rozmycie Aero",
+        "Name[zh_CN]": "Aero 毛玻璃模糊",
+        "Name[zh_TW]": "Aero 毛玻璃模糊"
+    },
+    "X-KDE-ConfigModule": "kwin_aeroglassblur_config"
+}
