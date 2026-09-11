@@ -1,8 +1,8 @@
 %define KF6_MIN_VERSION 6.3.0
 
 Name:           aeroshell-kwin-components
-Version:        6.8.0
-Release:        2%{?dist}
+Version:        45.0.0
+Release:        1%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -10,7 +10,7 @@ URL:            https://github.com/evernightvista/aeroshell-kwin-components
 Source0:        %{name}-%{version}.tar.gz
 
 BuildRequires:  cmake >= 3.16
-BuildRequires:  ninja
+BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules >= %{KF6_MIN_VERSION}
 BuildRequires:  kf6-rpm-macros
@@ -38,18 +38,19 @@ BuildRequires:  kf6-kcmutils-devel >= %{KF6_MIN_VERSION}
 BuildRequires:  kf6-ksvg-devel >= %{KF6_MIN_VERSION}
 
 # KWin
-BuildRequires:  kwin-devel >= 6.8.0
-BuildRequires:  kdecoration3-devel
-BuildRequires:  kwin-effects-devel
+BuildRequires:  kwin-devel >= 6.7.0
+BuildRequires:  qt6-qtbase-private-devel
+BuildRequires:  kdecoration-devel
 
 # Other
-BuildRequires:  epoxy-devel
 BuildRequires:  wayland-protocols-devel >= 1.48
 BuildRequires:  vulkan-headers
 BuildRequires:  pkgconfig
+BuildRequires:  libepoxy-devel
+BuildRequires:  libdrm-devel
 
 # Runtime
-Requires:       kwin >= 6.8.0
+Requires:       kwin >= 6.7.0
 Requires:       plasma-workspace-wayland
 
 %description
@@ -66,7 +67,7 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 Development files for %{name}.
 
 %prep
-%autosetup -p1
+%autosetup -n %{name} -p1
 
 %build
 %cmake_kf6 \
@@ -84,23 +85,19 @@ Development files for %{name}.
 %files -f %{name}.lang
 %license LICENSE
 %doc README.md
-%{_kf6_plugindir}/kwin/effects/plugins/*.so
-%{_kf6_plugindir}/kwin/effects/configs/*.so
+%{_bindir}/aeroshell_update_default_rules
+%{_qt6_plugindir}/kwin/effects/plugins/aeroglassblur.so
+%{_qt6_plugindir}/kwin/effects/plugins/aeroglide.so
+%{_qt6_plugindir}/kwin/effects/plugins/launchfeedback.so
+%{_qt6_plugindir}/kwin/effects/plugins/libkwin_effect_smodsnap.so
+%{_qt6_plugindir}/kwin/effects/configs/kwin_aeroglassblur_config.so
+%{_qt6_plugindir}/kwin/effects/configs/kwin_aeroglide_config.so
 %{_datadir}/kwin/
 %{_datadir}/smod/
 %{_datadir}/aeroshell/
 
 %changelog
-* Fri Sep 11 2026 AeroShell Team <team@aeroshell.dev> - 6.8.0-2
-- Fix taskbar/start menu colorization at session start when "Follow KDE
-  Plasma accent color" is enabled: the "kwinaero" shared memory segment now
-  carries a write timestamp and stale segments from a previous session are
-  ignored, so kwinrc is authoritative at startup
-- The effect now watches kdeglobals with KConfigWatcher and follows accent
-  color changes immediately, without opening the effect settings first
-- Startup retries re-apply accent following if kdeglobals was not final yet
-
-* Wed Sep 09 2026 AeroShell Team <team@aeroshell.dev> - 6.8.0-1
+* Fri Sep 11 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-1
 - Update to Plasma 6.8 compatibility
 - Drop X11 support, Wayland only
-- Bump version to 6.8.0
+- Bump version to 45.0.0
