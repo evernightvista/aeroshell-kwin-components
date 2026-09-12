@@ -1,5 +1,5 @@
 %define KF6_MIN_VERSION 6.3.0
-%define KWIN_VERSION 6.7.90
+%define KWIN_VERSION 6.7.5
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
@@ -99,8 +99,7 @@ Development files for %{name}.
 
 %changelog
 * Sat Sep 12 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-2
-- Plasma 6.8 Beta Ready
-- Fix build against KWin 6.7.90: drawWindow() and paintScreen() now return bool
+- Fix Dark Mode lost color
 
 * Fri Sep 11 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-1
 - Update to Plasma 6.8 compatibility

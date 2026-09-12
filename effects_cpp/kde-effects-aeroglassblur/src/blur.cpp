@@ -430,18 +430,31 @@ void BlurEffect::reconfigure(ReconfigureFlags flags)
 {
     Q_UNUSED(flags)
 
+    // Read the config before deciding whether the shared memory handover may
+    // be used: with FollowPlasmaAccentColor enabled the color is always the
+    // live Plasma accent, so a segment written by the KCM - especially a
+    // leftover preview (skip=true) that also carries its own intensity and
+    // transparency values - must never override the accent-following colors.
+    BlurConfig::self()->read();
+    m_followPlasmaAccentColor = BlurConfig::followPlasmaAccentColor();
+
     // The KCM hands colors over through the "kwinaero" shared memory segment
     // and then triggers reconfigure() over D-Bus.  Only honor the segment when
     // a KCM wrote it recently (see readMemory()): at session start the segment
     // is a leftover from a previous login, and the kwinrc values are
-    // authoritative instead.
+    // authoritative instead.  Accent following disables the handover entirely
+    // (the accent is re-read live on every reconfigure / heal tick).
     SharedColorState shared;
-    const bool useSharedColor = readMemory(shared) && shared.fresh;
+    const bool useSharedColor = !m_followPlasmaAccentColor && readMemory(shared) && shared.fresh;
 
     if (useSharedColor && shared.skip)
     {
         // Live preview in the KCM color mixer: the preview owns the HSV
-        // values until the dialog is applied or canceled.
+        // values until the dialog is applied or canceled.  Keep the config
+        // derived switches fresh too, exactly like the original code did.
+        m_maximizeColorization = BlurConfig::maximizeColorization();
+        m_blurDocks = BlurConfig::blurDocks();
+        m_basicColorization = BlurConfig::basicColorization();
         m_aeroIntensity   = shared.intensity;
         m_aeroHue         = shared.hue;
         m_aeroSaturation  = shared.saturation;
@@ -451,21 +464,11 @@ void BlurEffect::reconfigure(ReconfigureFlags flags)
         for (auto &[window, data] : m_windows) {
             data.blurItem->setPixelsToExpandRepaintsBelowOpaqueRegions(m_expandSize);
         }
-        // Still need to read config for FollowPlasmaAccentColor and other settings
-        BlurConfig::self()->read();
-        m_followPlasmaAccentColor = BlurConfig::followPlasmaAccentColor();
-        m_maximizeColorization = BlurConfig::maximizeColorization();
-        m_blurDocks = BlurConfig::blurDocks();
-        m_basicColorization = BlurConfig::basicColorization();
-
-        // Apply Plasma accent color following if enabled
-        updateAccentFromPlasma();
 
         effects->addRepaintFull();
         return;
     }
 
-    BlurConfig::self()->read();
     if (useSharedColor) {
         m_aeroIntensity   = shared.intensity;
         m_aeroHue         = shared.hue;
@@ -1190,12 +1193,12 @@ bool BlurEffect::shouldNotBlur(const EffectWindow *w) const
     return false;
 }
 
-bool BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
+void BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
     blur(renderTarget, viewport, w, mask, deviceRegion, data);
 
     // Draw the window over the blurred area
-    return effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+    effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
 }
 
 void BlurEffect::ensureReflectTexture() {
@@ -1263,8 +1266,8 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
     if (backgroundRect.height() % 2 != 0) {
         backgroundRect.setHeight(backgroundRect.height() - 1);
     }
-    const Rect scaledBackgroundRect = backgroundRect.scaled(viewport.scale()).rounded();
-    const Rect deviceBackgroundRect = viewport.mapToDeviceCoordinates(backgroundRect).rounded();
+    const Rect scaledBackgroundRect = snapToPixelGrid(backgroundRect.scaled(viewport.scale()));
+    const Rect deviceBackgroundRect = snapToPixelGrid(viewport.mapToDeviceCoordinates(backgroundRect));
 
     auto opacity = w->opacity() * data.opacity();
     QVariant opacityData = w->data(OPACITY_DATA);
@@ -1793,6 +1796,10 @@ void BlurEffect::updateAccentFromPlasma()
         m_lastPlasmaAccentColor = accentColor;
         applyPlasmaAccentColor(accentColor);
         m_accentAppliedOnce = true;
+        // The colorization uniforms only reach the screen on a repaint; always
+        // request one here so every caller (reconfigure, heal tick, ...) is
+        // guaranteed to display the freshly applied accent.
+        effects->addRepaintFull();
     }
     m_plasmaAccentColorTimer->start();
 }
@@ -1820,15 +1827,32 @@ void BlurEffect::slotPlasmaAccentColorChanged()
         return;
     }
 
+    // Periodic self-heal (2 s timer) and kdeglobals watcher debounce: restore
+    // any colorization state that a KCM handover or an interrupted config
+    // write may have left stale.  The intensity and transparency members are
+    // the only accent-independent pieces of the colorization state that the
+    // shared memory handover used to be able to overwrite, so re-reading them
+    // from kwinrc here makes the effect recover by itself the same way opening
+    // the effect settings does, without requiring user interaction.
+    BlurConfig::self()->read();
+    const int cfgIntensity     = BlurConfig::aeroIntensity();
+    const bool cfgTransparency = BlurConfig::enableTransparency();
+    bool changed = cfgIntensity != m_aeroIntensity
+                || cfgTransparency != m_transparencyEnabled;
+
     QColor accentColor = readPlasmaAccentColor();
-    if (!accentColor.isValid() || accentColor == m_lastPlasmaAccentColor) {
-        return;
+    if (accentColor.isValid() && accentColor != m_lastPlasmaAccentColor) {
+        m_lastPlasmaAccentColor = accentColor;
+        applyPlasmaAccentColor(accentColor);
+        changed = true;
     }
 
-    m_lastPlasmaAccentColor = accentColor;
-    applyPlasmaAccentColor(accentColor);
-
-    effects->addRepaintFull();
+    if (changed) {
+        m_aeroIntensity = cfgIntensity;
+        m_transparencyEnabled = cfgTransparency;
+        configureAeroColors();
+        effects->addRepaintFull();
+    }
 }
 
 } // namespace KWin

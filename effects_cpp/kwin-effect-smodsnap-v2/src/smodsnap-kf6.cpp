@@ -33,9 +33,9 @@ void SmodSnapEffect::loadTextures()
     }
 }
 
-bool SmodSnapEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen)
+void SmodSnapEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen)
 {
-    const bool ok = effects->paintScreen(renderTarget, viewport, mask, region, screen);
+    effects->paintScreen(renderTarget, viewport, mask, region, screen);
 
     if (anim1->m_active || anim2->m_active) {
         glEnable(GL_BLEND);
@@ -45,7 +45,7 @@ bool SmodSnapEffect::paintScreen(const RenderTarget &renderTarget, const RenderV
         const auto scale = viewport.scale();
 
         if (!anim1->m_finished) {
-            const QRectF pixelGeometry = snapToPixels(anim1->m_rect, scale).scaled(scale);
+            const QRectF pixelGeometry = snapToPixelGridF(anim1->m_rect.scaled(scale));
             QMatrix4x4 mvp = viewport.projectionMatrix();
             mvp.translate(anim1->m_rect.x(), anim1->m_rect.y());
             m_shader->setUniform(GLShader::Mat4Uniform::ModelViewProjectionMatrix, mvp);
@@ -54,7 +54,7 @@ bool SmodSnapEffect::paintScreen(const RenderTarget &renderTarget, const RenderV
         }
 
         if (!anim2->m_finished) {
-            const QRectF pixelGeometry = snapToPixels(anim2->m_rect, scale).scaled(scale);
+            const QRectF pixelGeometry = snapToPixelGridF(anim2->m_rect.scaled(scale));
             QMatrix4x4 mvp = viewport.projectionMatrix();
             mvp.translate(anim2->m_rect.x(), anim2->m_rect.y());
             m_shader->setUniform(GLShader::Mat4Uniform::ModelViewProjectionMatrix, mvp);
@@ -65,8 +65,6 @@ bool SmodSnapEffect::paintScreen(const RenderTarget &renderTarget, const RenderV
         ShaderManager::instance()->popShader();
         glDisable(GL_BLEND);
     }
-
-    return ok;
 }
 
 }
