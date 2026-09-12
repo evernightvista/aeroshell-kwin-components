@@ -173,15 +173,15 @@ void StartupFeedbackEffect::prePaintScreen(ScreenPrePaintData &data)
     effects->prePaintScreen(data);
 }
 
-void StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen)
+bool StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen)
 {
-    effects->paintScreen(renderTarget, viewport, mask, region, screen);
+    const bool ok = effects->paintScreen(renderTarget, viewport, mask, region, screen);
     if (m_active) {
         if(m_showBusyCursor) {
            m_cursorItem->refresh();
            effects->addRepaintFull();
         }
-        return;
+        return ok;
         GLTexture *texture;
         switch (m_type) {
         case BouncingFeedback:
@@ -192,10 +192,10 @@ void StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const 
             texture = m_texture.get();
             break;
         default:
-            return; // safety
+            return ok; // safety
         }
         if (!texture) {
-            return;
+            return ok;
         }
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -217,6 +217,8 @@ void StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const 
         ShaderManager::instance()->popShader();
         glDisable(GL_BLEND);
     }
+
+    return ok;
 }
 
 void StartupFeedbackEffect::postPaintScreen()

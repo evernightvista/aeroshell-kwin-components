@@ -1190,12 +1190,12 @@ bool BlurEffect::shouldNotBlur(const EffectWindow *w) const
     return false;
 }
 
-void BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
+bool BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
     blur(renderTarget, viewport, w, mask, deviceRegion, data);
 
     // Draw the window over the blurred area
-    effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+    return effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
 }
 
 void BlurEffect::ensureReflectTexture() {
@@ -1263,8 +1263,8 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
     if (backgroundRect.height() % 2 != 0) {
         backgroundRect.setHeight(backgroundRect.height() - 1);
     }
-    const Rect scaledBackgroundRect = snapToPixelGrid(backgroundRect.scaled(viewport.scale()));
-    const Rect deviceBackgroundRect = snapToPixelGrid(viewport.mapToDeviceCoordinates(backgroundRect));
+    const Rect scaledBackgroundRect = backgroundRect.scaled(viewport.scale()).rounded();
+    const Rect deviceBackgroundRect = viewport.mapToDeviceCoordinates(backgroundRect).rounded();
 
     auto opacity = w->opacity() * data.opacity();
     QVariant opacityData = w->data(OPACITY_DATA);

@@ -1,8 +1,9 @@
 %define KF6_MIN_VERSION 6.3.0
+%define KWIN_VERSION 6.7.90
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -38,7 +39,7 @@ BuildRequires:  kf6-kcmutils-devel >= %{KF6_MIN_VERSION}
 BuildRequires:  kf6-ksvg-devel >= %{KF6_MIN_VERSION}
 
 # KWin
-BuildRequires:  kwin-devel >= 6.7.0
+BuildRequires:  kwin-devel >= %{KWIN_VERSION}
 BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  kdecoration-devel
 
@@ -50,7 +51,7 @@ BuildRequires:  libepoxy-devel
 BuildRequires:  libdrm-devel
 
 # Runtime
-Requires:       kwin >= 6.7.0
+Requires:       kwin >= %{KWIN_VERSION}
 Requires:       plasma-workspace-wayland
 
 %description
@@ -97,6 +98,10 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Sat Sep 12 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-2
+- Plasma 6.8 Beta Ready
+- Fix build against KWin 6.7.90: drawWindow() and paintScreen() now return bool
+
 * Fri Sep 11 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-1
 - Update to Plasma 6.8 compatibility
 - Drop X11 support, Wayland only
