@@ -56,7 +56,7 @@ public:
 
     bool isActive() const override
     {
-        return true;
+        return anim1 && anim2 && (anim1->m_active || anim2->m_active);
     }
 
     int requestedEffectChainPosition() const override
@@ -78,7 +78,6 @@ private:
     QPoint m_size = QPoint();
     bool needsToMoveAway = false;
     std::vector<std::unique_ptr<GLTexture>> m_texture;
-    std::unique_ptr<GLShader> m_shader;
     KWin::EffectWindow *m_window = nullptr;
     bool m_window_valid = false;
     bool m_window_checked_valid = false;

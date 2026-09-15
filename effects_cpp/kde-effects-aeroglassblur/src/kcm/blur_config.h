@@ -29,6 +29,7 @@ public:
 
     void save() override;
 	void writeToMemory(int h, int s, int v, int i, bool transparency, bool skip);
+    void cancelPreview();
 private Q_SLOTS:
 	void setTexturePath();
 	void clearTexturePath();
@@ -42,10 +43,13 @@ private Q_SLOTS:
     void on_kcfg_FollowPlasmaAccentColor_stateChanged(int state);
 
 private:
+    void requestReconfigure();
+
     ::Ui::BlurEffectConfig ui;
 
 	QFileDialog* m_dialog;
 	QSharedMemory m_sharedMemory;
+	bool m_previewActive = false;
 	MainWindow *m_window;
 
     void calculateDebugPrint();

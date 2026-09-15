@@ -9,6 +9,7 @@
 */
 #include "startupfeedback.h"
 // Qt
+#include <chrono>
 #include <QApplication>
 #include <QDBusConnectionInterface>
 #include <QDBusServiceWatcher>
@@ -176,12 +177,15 @@ void StartupFeedbackEffect::prePaintScreen(ScreenPrePaintData &data)
 bool StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen)
 {
     const bool ok = effects->paintScreen(renderTarget, viewport, mask, region, screen);
+    if (!ok) {
+        return false;
+    }
+
     if (m_active) {
         if(m_showBusyCursor) {
            m_cursorItem->refresh();
            effects->addRepaintFull();
         }
-        return ok;
         GLTexture *texture;
         switch (m_type) {
         case BouncingFeedback:
@@ -194,7 +198,7 @@ bool StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const 
         default:
             return ok; // safety
         }
-        if (!texture) {
+        if (!texture || texture->isNull()) {
             return ok;
         }
         glEnable(GL_BLEND);
@@ -208,6 +212,10 @@ bool StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const 
         } else {
             shader = ShaderManager::instance()->pushShader(ShaderTrait::MapTexture | ShaderTrait::TransformColorspace);
         }
+        if (!shader) {
+            glDisable(GL_BLEND);
+            return ok;
+        }
         const Rect pixelGeometry = m_currentGeometry.scaled(viewport.scale()).rounded();
         QMatrix4x4 mvp = viewport.projectionMatrix();
         mvp.translate(pixelGeometry.x(), pixelGeometry.y());
@@ -217,7 +225,6 @@ bool StartupFeedbackEffect::paintScreen(const RenderTarget &renderTarget, const 
         ShaderManager::instance()->popShader();
         glDisable(GL_BLEND);
     }
-
     return ok;
 }
 

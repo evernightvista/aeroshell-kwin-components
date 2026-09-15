@@ -36,13 +36,13 @@
         <default>true</default>
     </entry>
     <entry name="BlurNonMatching" type="Bool">
-        <default>false</default>
+        <default>true</default>
     </entry>
     <entry name="BlurMenus" type="Bool">
-        <default>false</default>
+        <default>true</default>
     </entry>
     <entry name="BlurDocks" type="Bool">
-        <default>false</default>
+        <default>true</default>
     </entry>
     <entry name="PaintAsTranslucent" type="Bool">
         <default>false</default>

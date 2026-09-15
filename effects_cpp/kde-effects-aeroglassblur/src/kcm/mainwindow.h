@@ -68,7 +68,6 @@ private Q_SLOTS:
 private:
     Ui::MainWindow *ui;
     bool preventChanges;
-    bool cancelChanges;
     FlowLayout* colorLayout;
     std::vector<ColorWindow> predefined_colors;
     short selected_color; // Index of the currently selected color.

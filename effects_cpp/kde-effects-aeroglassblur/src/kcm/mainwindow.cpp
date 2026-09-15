@@ -80,7 +80,6 @@ MainWindow::MainWindow(QSpinBox *spinbox, QSpinBox *spinboxg, QCheckBox *checkbo
 
   ui->setupUi(this);
   preventChanges = true;
-  cancelChanges = true;
 
   kcfg_AccentColorName = spinbox;
   kcfg_EnableTransparency = checkbox;
@@ -428,7 +427,6 @@ void MainWindow::on_alpha_slider_valueChanged(int value) {
 }
 
 void MainWindow::applyChanges() {
-  cancelChanges = false;
   kcfg_CustomColor->setText(predefined_colors[0].getColor().name(QColor::HexArgb));
   kcfg_AccentColorName->setValue(selected_color);
   kcfg_EnableTransparency->setChecked(ui->kcfg_EnableTransparency->isChecked());
@@ -447,13 +445,10 @@ void MainWindow::applyChanges() {
 // I wrote this at 3 AM it's probably overengineered but it works
 // I'll simplify this down the line later
 void MainWindow::closeEvent(QCloseEvent *event) {
-  int intensity  = kcfg_AeroIntensity->value();
-  int hue        = kcfg_AeroHue->value();
-  int saturation = kcfg_AeroSaturation->value();
-  int brightness = kcfg_AeroBrightness->value();
   KWin::BlurEffectConfig *conf = (KWin::BlurEffectConfig *)config_parent;
-  conf->writeToMemory(hue, saturation, brightness, intensity,
-                      kcfg_EnableTransparency->isChecked(), cancelChanges);
+  // Never create another shared-memory handover while the dialog is closing.
+  // This also restores kwinrc after an unapplied live preview.
+  conf->cancelPreview();
   resetToDefault();
   QMainWindow::closeEvent(event);
 }

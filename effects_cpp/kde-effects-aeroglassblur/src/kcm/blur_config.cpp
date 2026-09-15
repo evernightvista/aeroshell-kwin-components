@@ -189,6 +189,7 @@ void BlurEffectConfig::on_kcfg_ReflectionIntensity_valueChanged(int value)
 void BlurEffectConfig::writeToMemory(int h, int s, int v, int i, bool transparency, bool skip)
 {
 	// Examples for QSharedMemory can be found on the Qt website.
+    m_previewActive = false;
     if(m_sharedMemory.isAttached())
     {
         if(!m_sharedMemory.detach())
@@ -213,46 +214,80 @@ void BlurEffectConfig::writeToMemory(int h, int s, int v, int i, bool transparen
 	out << QDateTime::currentMSecsSinceEpoch();
     int size = buffer.size();
 
-    if(!m_sharedMemory.create(size))
+    // KWin may still be attached while a fast sequence of KCM updates is
+    // being delivered. Reuse an existing segment in that case instead of
+    // dropping the update and notifying KWin about a segment that was never
+    // written.
+    bool ready = m_sharedMemory.create(size);
+    if (!ready && m_sharedMemory.error() == QSharedMemory::AlreadyExists) {
+        ready = m_sharedMemory.attach(QSharedMemory::ReadWrite);
+    }
+    if (!ready || m_sharedMemory.size() < size)
     {
-        printf("Couldn't create or attach shared memory.\n");
+        qWarning() << "Couldn't create or attach shared memory:" << m_sharedMemory.error();
+        if (m_sharedMemory.isAttached()) {
+            m_sharedMemory.detach();
+        }
         return;
     }
-    m_sharedMemory.lock(); // Mutex lock
+    if (!m_sharedMemory.lock()) {
+        qWarning() << "Couldn't lock shared memory:" << m_sharedMemory.error();
+        m_sharedMemory.detach();
+        return;
+    }
     char* destination = (char*)m_sharedMemory.data();
     const char* source = buffer.data().data();
     memcpy(destination, source, qMin(m_sharedMemory.size(), size));
     m_sharedMemory.unlock();
 
+    m_previewActive = true;
+    requestReconfigure();
+}
+
+void BlurEffectConfig::requestReconfigure()
+{
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
                                          QStringLiteral("/Effects"),
                                          QDBusConnection::sessionBus());
     interface.reconfigureEffect(QStringLiteral("aeroglassblur"));
 }
+
+void BlurEffectConfig::cancelPreview()
+{
+    // A preview segment is only valid while this KCM is alive. Detach it
+    // before asking KWin to re-read kwinrc so the effect cannot consume a
+    // half-destroyed segment when the settings window is closing.
+    const bool hadPreview = m_previewActive || m_sharedMemory.isAttached();
+    m_previewActive = false;
+    if (m_sharedMemory.isAttached() && !m_sharedMemory.detach()) {
+        qWarning() << "Couldn't detach preview shared memory:" << m_sharedMemory.error();
+    }
+    if (hadPreview) {
+        requestReconfigure();
+    }
+}
 void BlurEffectConfig::save()
 {
-    int intensity  = ui.kcfg_AeroIntensity->value();
-    int hue        = ui.kcfg_AeroHue->value();
-    int saturation = ui.kcfg_AeroSaturation->value();
-    int brightness = ui.kcfg_AeroBrightness->value();
-
     // If following Plasma accent color, read the current accent color before saving
     if (ui.kcfg_FollowPlasmaAccentColor->isChecked()) {
         QColor accentColor = readPlasmaAccentColor();
         if (accentColor.isValid()) {
-            loadColor(accentColor.red(), accentColor.green(), accentColor.blue(), intensity);
-            hue = ui.kcfg_AeroHue->value();
-            saturation = ui.kcfg_AeroSaturation->value();
-            brightness = ui.kcfg_AeroBrightness->value();
+            loadColor(accentColor.red(), accentColor.green(), accentColor.blue(), ui.kcfg_AeroIntensity->value());
         }
     }
 
-    writeToMemory(hue, saturation, brightness, intensity, ui.kcfg_EnableTransparency->isChecked(), false);
+    // Stop the live preview before saving. KWin must read the just-written
+    // kwinrc values, not a still-attached temporary segment.
+    m_previewActive = false;
+    if (m_sharedMemory.isAttached() && !m_sharedMemory.detach()) {
+        qWarning() << "Couldn't detach preview shared memory:" << m_sharedMemory.error();
+    }
+
     KCModule::save();
-    OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
-                                         QStringLiteral("/Effects"),
-                                         QDBusConnection::sessionBus());
-    interface.reconfigureEffect(QStringLiteral("aeroglassblur"));
+    // Saved values live in kwinrc; shared memory is reserved for live
+    // previews. This avoids a second handover when the custom color window
+    // closes immediately after saving.
+    requestReconfigure();
 }
 
 void BlurEffectConfig::on_kcfg_AeroIntensity_valueChanged(int value)

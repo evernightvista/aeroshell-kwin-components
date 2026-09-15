@@ -31,12 +31,6 @@ SmodSnapEffect::SmodSnapEffect()
     anim2 = new SnapAnimation();
 
     loadTextures();
-
-    m_shader = ShaderManager::instance()->generateShaderFromFile(
-        ShaderTrait::MapTexture,
-        QString(),
-        QStringLiteral(":/effects/smodsnap/shaders/shader.frag")
-    );
 }
 
 SmodSnapEffect::~SmodSnapEffect()
@@ -68,6 +62,10 @@ void SmodSnapEffect::reconfigure(Effect::ReconfigureFlags flags)
 
 void SmodSnapEffect::windowAdded(KWin::EffectWindow *w)
 {
+    if (m_frames <= 0 || m_speed <= 0 || m_texture.empty()) {
+        return;
+    }
+
     if (w->isOutline()) {
         if (!anim1->m_active) {
             anim1->m_active = true;
@@ -79,6 +77,7 @@ void SmodSnapEffect::windowAdded(KWin::EffectWindow *w)
             const QPoint framesize = m_size * m_scale;
             const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
             anim1->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
+            effects->addRepaint(anim1->m_rect);
         } else if (!anim2->m_active) {
             anim2->m_active = true;
             anim2->m_finished = false;
@@ -89,14 +88,22 @@ void SmodSnapEffect::windowAdded(KWin::EffectWindow *w)
             const QPoint framesize = m_size * m_scale;
             const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
             anim2->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
+            effects->addRepaint(anim2->m_rect);
         }
     }
 }
 
 void SmodSnapEffect::prePaintScreen(ScreenPrePaintData &data)
 {
+    if (m_frames <= 0 || m_speed <= 0) {
+        anim1->m_active = false;
+        anim2->m_active = false;
+        effects->prePaintScreen(data);
+        return;
+    }
+
     if (anim1->m_active) {
-        const int time = anim2->m_clock.tick(data.view).count();
+        const int time = anim1->m_clock.tick(data.view).count();
 
         // NOTE we need to do (m_frames + 1) here so the last frame
         // will play for the same amount of time as the rest

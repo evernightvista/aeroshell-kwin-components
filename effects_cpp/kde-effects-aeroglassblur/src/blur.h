@@ -137,6 +137,7 @@ private:
     bool isMaximizedWindow(const EffectWindow *w) const;
     bool hasMaximizedWindowOnScreen(const EffectWindow *reference) const;
     bool hasMaximizedWindowOnCurrentActivity() const;
+    qreal windowCornerRadius(const EffectWindow *w) const;
     void updateDockBlurRegions(const EffectWindow *changedWindow);
 
 private:
@@ -160,8 +161,11 @@ private:
         int glowTextureLocation;
         int glowEnableLocation;
         int textureSizeLocation;
-        int useWaylandLocation;
         int glowOpacityLocation;
+
+        // SDF corner clipping
+        int blurRectSizeLocation;
+        int cornerRadiusLocation;
     } m_reflectPass;
     struct
     {
@@ -197,6 +201,11 @@ private:
         int aeroColorBalanceLocation;
         int aeroAfterglowBalanceLocation;
         int aeroBlurBalanceLocation;
+
+        // SDF corner clipping
+        int blurRectSizeLocation;
+        int cornerRadiusLocation;
+        int opacityModLocation;
     };
     enum AeroPasses { AERO = 0, BASIC, OPAQUE };
     AeroShader m_aeroPasses[3];
@@ -207,6 +216,9 @@ private:
     };
 
     bool m_valid = false;
+    bool m_softwareRenderer = false;
+    bool m_openGLESRenderer = false;
+    bool m_virtualMachine = false;
     RenderView *m_currentView = nullptr;
 
     size_t m_iterationCount; // number of times the texture will be downsized to half size
@@ -279,6 +291,11 @@ private:
 
     QMap<EffectWindow *, QMetaObject::Connection> windowBlurChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> windowExpandedGeometryChangedConnections;
+    QMap<EffectWindow *, QMetaObject::Connection> windowMaximizedStateChangedConnections;
+    QMap<EffectWindow *, QMetaObject::Connection> windowMinimizedChangedConnections;
+    QMap<EffectWindow *, QMetaObject::Connection> windowDecorationChangedConnections;
+    QMap<EffectWindow *, QMetaObject::Connection> decorationBlurRegionChangedConnections;
+    QMap<EffectWindow *, QWindow *> windowInternalWindows;
     std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
 
     QSharedMemory m_sharedMemory;

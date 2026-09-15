@@ -1,9 +1,9 @@
-%define KF6_MIN_VERSION 6.3.0
+%define KF6_MIN_VERSION 6.7.0
 %define KWIN_VERSION 6.7.90
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
-Release:        2%{?dist}
+Release:        4%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -39,7 +39,7 @@ BuildRequires:  kf6-kcmutils-devel >= %{KF6_MIN_VERSION}
 BuildRequires:  kf6-ksvg-devel >= %{KF6_MIN_VERSION}
 
 # KWin
-BuildRequires:  kwin-devel >= %{KWIN_VERSION}
+BuildRequires:  kwin-devel
 BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  kdecoration-devel
 
@@ -98,9 +98,21 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Tue Sep 15 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-4
+- Final Support KDE Plasma 6.8 Beta 1 or later
+
+* Sat Sep 13 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-3
+- Fix kwin_wayland crash when opening KCM settings or after applying settings
+- Fix signal connection leaks in aeroglassblur effect (dangling pointers on window close)
+- Properly disconnect all window signals when windows are deleted
+- Fix decoration blurRegionChanged connection leaks
+- Remove event filter from internal windows properly
+- Add null pointer safety checks for blurItem
+- Adapt for Plasma 6.7.90+ (KDE Plasma 6.8 Beta 1) compatibility
+- Bump minimum KWin version to 6.7.90
+
 * Sat Sep 12 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-2
-- Plasma 6.8 Beta Ready
-- Fix build against KWin 6.7.90: drawWindow() and paintScreen() now return bool
+- Fix Dark Mode lost color
 
 * Fri Sep 11 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-1
 - Update to Plasma 6.8 compatibility

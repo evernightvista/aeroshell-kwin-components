@@ -25,5 +25,8 @@
         "Name[zh_CN]": "Aero 毛玻璃模糊",
         "Name[zh_TW]": "Aero 毛玻璃模糊"
     },
-    "X-KDE-ConfigModule": "kwin_aeroglassblur_config"
+    "X-KDE-ConfigModule": "kwin_aeroglassblur_config",
+    "org.kde.kwin.effect": {
+        "enabledByDefaultMethod": true
+    }
 }
