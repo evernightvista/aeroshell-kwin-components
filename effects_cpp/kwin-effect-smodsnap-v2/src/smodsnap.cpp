@@ -31,10 +31,29 @@ SmodSnapEffect::SmodSnapEffect()
     anim2 = new SnapAnimation();
 
     loadTextures();
+
+    // Use a timer to poll for outline visibility changes.
+    // In Plasma 6.8+, the outline window is reused (shown/hidden) rather than
+    // created/destroyed each time, so windowAdded only fires once.
+    // We can't rely on prePaintScreen for detection because prePaintScreen
+    // may not be called when the effect is inactive.
+    m_outlineCheckTimer = new QTimer(this);
+    m_outlineCheckTimer->setInterval(50); // 20 Hz polling
+    m_outlineCheckTimer->setSingleShot(false);
+    connect(m_outlineCheckTimer, &QTimer::timeout, this, &SmodSnapEffect::checkOutlineVisibility);
+
+    // Initialize visibility state
+    m_outlineWasVisible = hasVisibleOutline();
+
+    m_outlineCheckTimer->start();
 }
 
 SmodSnapEffect::~SmodSnapEffect()
 {
+    if (m_outlineCheckTimer) {
+        m_outlineCheckTimer->stop();
+    }
+
     if (anim1) {
         delete anim1;
     }
@@ -62,34 +81,61 @@ void SmodSnapEffect::reconfigure(Effect::ReconfigureFlags flags)
 
 void SmodSnapEffect::windowAdded(KWin::EffectWindow *w)
 {
+    // Fallback for older Plasma versions where outline window is
+    // created/destroyed each time snap is triggered.
+    if (w->isOutline()) {
+        playSnapAnimation();
+    }
+}
+
+bool SmodSnapEffect::hasVisibleOutline() const
+{
+    const auto windows = effects->stackingOrder();
+    for (const EffectWindow *w : windows) {
+        if (w->isOutline()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void SmodSnapEffect::checkOutlineVisibility()
+{
+    const bool outlineVisible = hasVisibleOutline();
+    if (outlineVisible && !m_outlineWasVisible) {
+        playSnapAnimation();
+    }
+    m_outlineWasVisible = outlineVisible;
+}
+
+void SmodSnapEffect::playSnapAnimation()
+{
     if (m_frames <= 0 || m_speed <= 0 || m_texture.empty()) {
         return;
     }
 
-    if (w->isOutline()) {
-        if (!anim1->m_active) {
-            anim1->m_active = true;
-            anim1->m_finished = false;
-            anim1->m_frame = 0;
-            anim1->m_progress = 0;
-            anim1->m_clock.reset();
+    if (!anim1->m_active) {
+        anim1->m_active = true;
+        anim1->m_finished = false;
+        anim1->m_frame = 0;
+        anim1->m_progress = 0;
+        anim1->m_clock.reset();
 
-            const QPoint framesize = m_size * m_scale;
-            const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
-            anim1->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
-            effects->addRepaint(anim1->m_rect);
-        } else if (!anim2->m_active) {
-            anim2->m_active = true;
-            anim2->m_finished = false;
-            anim2->m_frame = 0;
-            anim2->m_progress = 0;
-            anim2->m_clock.reset();
+        const QPoint framesize = m_size * m_scale;
+        const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
+        anim1->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
+        effects->addRepaint(anim1->m_rect);
+    } else if (!anim2->m_active) {
+        anim2->m_active = true;
+        anim2->m_finished = false;
+        anim2->m_frame = 0;
+        anim2->m_progress = 0;
+        anim2->m_clock.reset();
 
-            const QPoint framesize = m_size * m_scale;
-            const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
-            anim2->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
-            effects->addRepaint(anim2->m_rect);
-        }
+        const QPoint framesize = m_size * m_scale;
+        const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
+        anim2->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
+        effects->addRepaint(anim2->m_rect);
     }
 }
 

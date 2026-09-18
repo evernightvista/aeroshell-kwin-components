@@ -9,6 +9,7 @@
 #include <chrono>
 
 #include <QObject>
+#include <QTimer>
 
 #include "effect/timeline.h"
 #include "effect/effecthandler.h"
@@ -66,11 +67,15 @@ public:
 
 private Q_SLOTS:
     void windowAdded(KWin::EffectWindow *w);
+    void checkOutlineVisibility();
 
 private:
     void loadTextures();
+    void playSnapAnimation();
+    bool hasVisibleOutline() const;
 
     SnapAnimation *anim1 = nullptr, *anim2 = nullptr;
+    QTimer *m_outlineCheckTimer = nullptr;
 
     int m_frames = 0;
     int m_speed = 0;
@@ -81,6 +86,7 @@ private:
     KWin::EffectWindow *m_window = nullptr;
     bool m_window_valid = false;
     bool m_window_checked_valid = false;
+    bool m_outlineWasVisible = false;
 };
 
 }
