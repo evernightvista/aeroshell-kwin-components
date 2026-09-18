@@ -3,12 +3,12 @@
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
 URL:            https://github.com/evernightvista/aeroshell-kwin-components
-Source0:        %{name}-%{version}.tar.gz
+Source0:        %{name}.tar.gz
 
 BuildRequires:  cmake >= 3.16
 BuildRequires:  ninja-build
@@ -89,8 +89,6 @@ Development files for %{name}.
 %{_bindir}/aeroshell_update_default_rules
 %{_qt6_plugindir}/kwin/effects/plugins/aeroglassblur.so
 %{_qt6_plugindir}/kwin/effects/plugins/aeroglide.so
-%{_qt6_plugindir}/kwin/effects/plugins/launchfeedback.so
-%{_qt6_plugindir}/kwin/effects/plugins/libkwin_effect_smodsnap.so
 %{_qt6_plugindir}/kwin/effects/configs/kwin_aeroglassblur_config.so
 %{_qt6_plugindir}/kwin/effects/configs/kwin_aeroglide_config.so
 %{_datadir}/kwin/
@@ -98,10 +96,13 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Sat Sep 19 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-5
+- Remove Launch Animation and Smodsnap
+
 * Tue Sep 15 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-4
 - Final Support KDE Plasma 6.8 Beta 1 or later
 
-* Sat Sep 13 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-3
+* Sun Sep 13 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-3
 - Fix kwin_wayland crash when opening KCM settings or after applying settings
 - Fix signal connection leaks in aeroglassblur effect (dangling pointers on window close)
 - Properly disconnect all window signals when windows are deleted
