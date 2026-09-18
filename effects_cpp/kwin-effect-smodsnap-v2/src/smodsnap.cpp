@@ -10,6 +10,17 @@
 #include <KDecoration3/Decoration>
 #include <KDecoration3/DecoratedWindow>
 
+#include <QDebug>
+
+static const QLoggingCategory &smodsnapLog()
+{
+    static const QLoggingCategory category("kwin.smodsnap", QtWarningMsg);
+    return category;
+}
+
+#define qCDebugSmod qCDebug(smodsnapLog)
+#define qCWarningSmod qCWarning(smodsnapLog)
+
 static void ensureResources()
 {
     Q_INIT_RESOURCE(smodsnap);
@@ -20,6 +31,7 @@ namespace KWin
 
 SmodSnapEffect::SmodSnapEffect()
 {
+    qCDebugSmod << "SmodSnapEffect constructor called";
     connect(effects, &EffectsHandler::windowAdded, this, &SmodSnapEffect::windowAdded);
 
     reconfigure(ReconfigureAll);
@@ -31,6 +43,8 @@ SmodSnapEffect::SmodSnapEffect()
     anim2 = new SnapAnimation();
 
     loadTextures();
+
+    qCDebugSmod << "Texture loaded: frames=" << m_frames << "speed=" << m_speed << "scale=" << m_scale << "size=" << m_size;
 
     // Use a timer to poll for outline visibility changes.
     // In Plasma 6.8+, the outline window is reused (shown/hidden) rather than
@@ -44,8 +58,18 @@ SmodSnapEffect::SmodSnapEffect()
 
     // Initialize visibility state
     m_outlineWasVisible = hasVisibleOutline();
+    qCDebugSmod << "Initial outline visible state:" << m_outlineWasVisible;
+
+    // Debug: dump all windows in stacking order
+    const auto allWindows = effects->stackingOrder();
+    qCDebugSmod << "Total windows in stackingOrder:" << allWindows.size();
+    for (const EffectWindow *w : allWindows) {
+        qCDebugSmod << "  Window:" << w->windowClass() << "isOutline:" << w->isOutline()
+                    << "isVisible:" << w->isVisible() << "windowRole:" << w->windowRole();
+    }
 
     m_outlineCheckTimer->start();
+    qCDebugSmod << "Outline check timer started with interval" << m_outlineCheckTimer->interval() << "ms";
 }
 
 SmodSnapEffect::~SmodSnapEffect()
@@ -84,6 +108,7 @@ void SmodSnapEffect::windowAdded(KWin::EffectWindow *w)
     // Fallback for older Plasma versions where outline window is
     // created/destroyed each time snap is triggered.
     if (w->isOutline()) {
+        qCDebugSmod << "windowAdded: outline window detected via windowAdded signal";
         playSnapAnimation();
     }
 }
@@ -91,18 +116,30 @@ void SmodSnapEffect::windowAdded(KWin::EffectWindow *w)
 bool SmodSnapEffect::hasVisibleOutline() const
 {
     const auto windows = effects->stackingOrder();
+    int outlineCount = 0;
+    int visibleOutlineCount = 0;
     for (const EffectWindow *w : windows) {
         if (w->isOutline()) {
-            return true;
+            outlineCount++;
+            if (w->isVisible()) {
+                visibleOutlineCount++;
+            }
         }
     }
-    return false;
+    if (outlineCount > 0) {
+        qCDebugSmod << "hasVisibleOutline: found" << outlineCount << "outline windows, visible:" << visibleOutlineCount;
+    }
+    return visibleOutlineCount > 0;
 }
 
 void SmodSnapEffect::checkOutlineVisibility()
 {
     const bool outlineVisible = hasVisibleOutline();
+    if (outlineVisible != m_outlineWasVisible) {
+        qCDebugSmod << "Outline visibility changed:" << m_outlineWasVisible << "->" << outlineVisible;
+    }
     if (outlineVisible && !m_outlineWasVisible) {
+        qCDebugSmod << "Outline appeared! Triggering snap animation";
         playSnapAnimation();
     }
     m_outlineWasVisible = outlineVisible;
@@ -110,7 +147,9 @@ void SmodSnapEffect::checkOutlineVisibility()
 
 void SmodSnapEffect::playSnapAnimation()
 {
+    qCDebugSmod << "playSnapAnimation called. frames=" << m_frames << "speed=" << m_speed << "texture size=" << m_texture.size();
     if (m_frames <= 0 || m_speed <= 0 || m_texture.empty()) {
+        qCWarningSmod << "playSnapAnimation: conditions not met, aborting";
         return;
     }
 
@@ -124,6 +163,7 @@ void SmodSnapEffect::playSnapAnimation()
         const QPoint framesize = m_size * m_scale;
         const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
         anim1->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
+        qCDebugSmod << "Playing snap animation on anim1, rect:" << anim1->m_rect;
         effects->addRepaint(anim1->m_rect);
     } else if (!anim2->m_active) {
         anim2->m_active = true;
@@ -135,7 +175,10 @@ void SmodSnapEffect::playSnapAnimation()
         const QPoint framesize = m_size * m_scale;
         const QPoint pos = effects->cursorPos().toPoint() - (framesize / 2);
         anim2->m_rect = Rect(pos, QSize(framesize.x(), framesize.y()));
+        qCDebugSmod << "Playing snap animation on anim2, rect:" << anim2->m_rect;
         effects->addRepaint(anim2->m_rect);
+    } else {
+        qCDebugSmod << "Both animation slots active, skipping";
     }
 }
 
