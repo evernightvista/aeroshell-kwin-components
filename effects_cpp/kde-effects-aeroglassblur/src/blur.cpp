@@ -779,6 +779,15 @@ void BlurEffect::slotWindowAdded(EffectWindow *w)
     });
 
     if (auto internal = w->internalWindow()) {
+        // Clean up any previous internal window entry to avoid leaking
+        // the event filter if slotWindowAdded is called again for the
+        // same EffectWindow (e.g. decoration change triggers re-add).
+        if (auto oldIt = windowInternalWindows.find(w); oldIt != windowInternalWindows.end()) {
+            if (oldIt.value()) {
+                oldIt.value()->removeEventFilter(this);
+            }
+            windowInternalWindows.erase(oldIt);
+        }
         internal->installEventFilter(this);
         windowInternalWindows[w] = internal;
     }
@@ -830,6 +839,11 @@ void BlurEffect::slotWindowDeleted(EffectWindow *w)
         decorationBlurRegionChangedConnections.erase(it);
     }
 
+    // windowInternalWindows stores QPointer<QWindow>, which automatically
+    // becomes null when the internal QWindow is destroyed before this slot
+    // runs.  This prevents calling removeEventFilter on a dangling pointer,
+    // which was the root cause of the intermittent kwin_wayland SIGSEGV
+    // (crash in QObject::removeEventFilter at aeroglassblur.so + 0x25042).
     if (auto it = windowInternalWindows.find(w); it != windowInternalWindows.end()) {
         if (it.value()) {
             it.value()->removeEventFilter(this);
