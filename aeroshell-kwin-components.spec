@@ -3,7 +3,7 @@
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -96,6 +96,10 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Fri Sep 25 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-7
+- Mid-Autumn Festival Updates
+- Fix Title Bar Bug
+
 * Fri Sep 19 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-6
 - Fix intermittent kwin_wayland SIGSEGV in aeroglassblur.so slotWindowDeleted
 - Replace raw QWindow* with QPointer<QWindow> in windowInternalWindows map

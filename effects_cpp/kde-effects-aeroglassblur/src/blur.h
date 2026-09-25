@@ -16,7 +16,6 @@
 #include <QList>
 #include <QColor>
 #include <QSharedMemory>
-#include <QPointer>
 
 #include <unordered_map>
 
@@ -116,6 +115,13 @@ private:
     void configureAeroColors();
     RegionF blurRegion(EffectWindow *w) const;
     RegionF decorationBlurRegion(const EffectWindow *w) const;
+    // Geometry of the transparent rect in the decoration. On KWin versions that
+    // no longer expose EffectWindow::decorationInnerRect() (6.8 beta / v6.7.91),
+    // reproduce it as frame rect minus the decoration borders. This extends the
+    // blur region up to where the decoration actually ends, instead of clipping
+    // to the client buffer rect, which leaves a 1-3px black seam below the
+    // title bar on decorations that overlap the client area.
+    QRectF decorationInnerRect(const EffectWindow *w) const;
     bool decorationSupportsBlurBehind(const EffectWindow *w) const;
     RegionF roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const;
     qreal decorationCornerRadius(const EffectWindow *w) const;
@@ -296,7 +302,7 @@ private:
     QMap<EffectWindow *, QMetaObject::Connection> windowMinimizedChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> windowDecorationChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> decorationBlurRegionChangedConnections;
-    QMap<EffectWindow *, QPointer<QWindow>> windowInternalWindows;
+    QMap<EffectWindow *, QWindow *> windowInternalWindows;
     std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
 
     QSharedMemory m_sharedMemory;
