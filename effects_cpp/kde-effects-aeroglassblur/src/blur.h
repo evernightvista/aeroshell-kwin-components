@@ -16,6 +16,7 @@
 #include <QList>
 #include <QColor>
 #include <QSharedMemory>
+#include <QPointer>
 
 #include <unordered_map>
 
@@ -302,7 +303,9 @@ private:
     QMap<EffectWindow *, QMetaObject::Connection> windowMinimizedChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> windowDecorationChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> decorationBlurRegionChangedConnections;
-    QMap<EffectWindow *, QWindow *> windowInternalWindows;
+    // QPointer: the internal QWindow can be destroyed before slotWindowDeleted
+    // runs; a raw pointer then dangles and removeEventFilter() segfaults.
+    QMap<EffectWindow *, QPointer<QWindow>> windowInternalWindows;
     std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
 
     QSharedMemory m_sharedMemory;

@@ -1,51 +1,103 @@
 diff --git a/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp b/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp
-index 9db5799..0c9636f 100644
+index 9db5799..4690d36 100644
 --- a/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp
 +++ b/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp
-@@ -1003,7 +1003,14 @@ RegionF BlurEffect::decorationBlurRegion(const EffectWindow *w) const
+@@ -997,13 +997,32 @@ bool BlurEffect::decorationSupportsBlurBehind(const EffectWindow *w) const
+     return w->decoration() && !w->decoration()->blurRegion().isNull();
+ }
+ 
++QRectF BlurEffect::decorationInnerRect(const EffectWindow *w) const
++{
++    QRectF rect = w->rect();
++    if (!w->decoration()) {
++        return rect;
++    }
++    // Equivalent to upstream EffectWindow::decorationInnerRect(), which is
++    // `window->rect() - window->frameMargins()`. frameMargins() is the decoration
++    // borders; they are exposed on KDecoration3::Decoration as border{Left,Top,
++    // Right,Bottom}(). When the decoration's glass overlaps the client area, this
++    // rect extends slightly above w->contentsRect(); clipping the blur to
++    // contentsRect() leaves a 1-3px black seam right below the title bar.
++    const qreal left = w->decoration()->borderLeft();
++    const qreal top = w->decoration()->borderTop();
++    const qreal right = w->decoration()->borderRight();
++    const qreal bottom = w->decoration()->borderBottom();
++    return rect.adjusted(left, top, -right, -bottom);
++}
++
+ RegionF BlurEffect::decorationBlurRegion(const EffectWindow *w) const
+ {
+     if (!decorationSupportsBlurBehind(w)) {
          return {};
      }
  
 -    RegionF decorationRegion = RegionF(w->decoration()->rect()) - w->contentsRect();
-+    // Subtract the decoration's transparent inner rect, not the raw contentsRect.
-+    // decorationInnerRect() is the area through which the client shows; when the
-+    // decoration is extended into the client area (the Aero glass case), it sits
-+    // below contentsRect().top().  Subtracting contentsRect() here used to leave
-+    // the few pixels where the glass titlebar overlaps the client outside the blur
-+    // region, so no frosted backdrop was drawn behind them and they rendered as a
-+    // thin black strip directly under the title bar.
-+    RegionF decorationRegion = RegionF(w->decoration()->rect()) - w->decorationInnerRect();
++    RegionF decorationRegion = RegionF(w->decoration()->rect()) - decorationInnerRect(w);
      //! we return only blurred regions that belong to decoration region
      RegionF blurRegion = decorationRegion.intersected(RegionF(w->decoration()->blurRegion()));
  
-@@ -1227,13 +1234,19 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
+@@ -1227,13 +1246,16 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
                  // for the whole window.
                  region = w->rect();
                  if (w->decorationHasAlpha() && decorationSupportsBlurBehind(w)) {
 -                    region &= w->contentsRect();
-+                    region &= w->decorationInnerRect();
++                    region &= decorationInnerRect(w);
                  }
              } else {
                  if (frame.has_value()) {
                      region = frame.value();
                  }
 -                region += content->translated(w->contentsRect().topLeft()) & w->contentsRect(); // LIKELY_BUG
-+                // The surface blur region is in buffer-local coords; move it to
-+                // frame coords with the buffer origin (contentsRect.topLeft()),
-+                // then clip to the decoration's transparent inner rect.  Clipping
-+                // to contentsRect() left the strip where the Aero titlebar glass
-+                // overlaps the client outside the blurred client region, which
-+                // showed through as a black line under the title bar.
-+                region += content->translated(w->contentsRect().topLeft()) & w->decorationInnerRect();
++                // content() is client-surface relative: translate by the client
++                // origin, but clip to the decoration's transparent inner rect so
++                // the glass covers the seam where the decoration overlaps the client.
++                region += content->translated(w->contentsRect().topLeft()) & decorationInnerRect(w);
              }
          } else if (frame.has_value()) {
              region = frame.value();
-@@ -1243,7 +1256,7 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
+@@ -1243,7 +1265,7 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
      if (w->decorationHasAlpha() && decorationSupportsBlurBehind(w)) {
          // If the client hasn't specified a blur region, we'll only enable
          // the effect behind the decoration.
 -        region &= w->contentsRect();
-+        region &= w->decorationInnerRect();
++        region &= decorationInnerRect(w);
          region |= decorationBlurRegion(w);
  
      }
+diff --git a/effects_cpp/kde-effects-aeroglassblur/src/blur.h b/effects_cpp/kde-effects-aeroglassblur/src/blur.h
+index 190e494..aa790db 100644
+--- a/effects_cpp/kde-effects-aeroglassblur/src/blur.h
++++ b/effects_cpp/kde-effects-aeroglassblur/src/blur.h
+@@ -16,6 +16,7 @@
+ #include <QList>
+ #include <QColor>
+ #include <QSharedMemory>
++#include <QPointer>
+ 
+ #include <unordered_map>
+ 
+@@ -115,6 +116,13 @@ private:
+     void configureAeroColors();
+     RegionF blurRegion(EffectWindow *w) const;
+     RegionF decorationBlurRegion(const EffectWindow *w) const;
++    // Geometry of the transparent rect in the decoration. On KWin versions that
++    // no longer expose EffectWindow::decorationInnerRect() (6.8 beta / v6.7.91),
++    // reproduce it as frame rect minus the decoration borders. This extends the
++    // blur region up to where the decoration actually ends, instead of clipping
++    // to the client buffer rect, which leaves a 1-3px black seam below the
++    // title bar on decorations that overlap the client area.
++    QRectF decorationInnerRect(const EffectWindow *w) const;
+     bool decorationSupportsBlurBehind(const EffectWindow *w) const;
+     RegionF roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const;
+     qreal decorationCornerRadius(const EffectWindow *w) const;
+@@ -295,7 +303,9 @@ private:
+     QMap<EffectWindow *, QMetaObject::Connection> windowMinimizedChangedConnections;
+     QMap<EffectWindow *, QMetaObject::Connection> windowDecorationChangedConnections;
+     QMap<EffectWindow *, QMetaObject::Connection> decorationBlurRegionChangedConnections;
+-    QMap<EffectWindow *, QWindow *> windowInternalWindows;
++    // QPointer: the internal QWindow can be destroyed before slotWindowDeleted
++    // runs; a raw pointer then dangles and removeEventFilter() segfaults.
++    QMap<EffectWindow *, QPointer<QWindow>> windowInternalWindows;
+     std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
+ 
+     QSharedMemory m_sharedMemory;
