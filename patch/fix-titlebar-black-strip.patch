@@ -1,0 +1,51 @@
+diff --git a/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp b/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp
+index 9db5799..0c9636f 100644
+--- a/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp
++++ b/effects_cpp/kde-effects-aeroglassblur/src/blur.cpp
+@@ -1003,7 +1003,14 @@ RegionF BlurEffect::decorationBlurRegion(const EffectWindow *w) const
+         return {};
+     }
+ 
+-    RegionF decorationRegion = RegionF(w->decoration()->rect()) - w->contentsRect();
++    // Subtract the decoration's transparent inner rect, not the raw contentsRect.
++    // decorationInnerRect() is the area through which the client shows; when the
++    // decoration is extended into the client area (the Aero glass case), it sits
++    // below contentsRect().top().  Subtracting contentsRect() here used to leave
++    // the few pixels where the glass titlebar overlaps the client outside the blur
++    // region, so no frosted backdrop was drawn behind them and they rendered as a
++    // thin black strip directly under the title bar.
++    RegionF decorationRegion = RegionF(w->decoration()->rect()) - w->decorationInnerRect();
+     //! we return only blurred regions that belong to decoration region
+     RegionF blurRegion = decorationRegion.intersected(RegionF(w->decoration()->blurRegion()));
+ 
+@@ -1227,13 +1234,19 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
+                 // for the whole window.
+                 region = w->rect();
+                 if (w->decorationHasAlpha() && decorationSupportsBlurBehind(w)) {
+-                    region &= w->contentsRect();
++                    region &= w->decorationInnerRect();
+                 }
+             } else {
+                 if (frame.has_value()) {
+                     region = frame.value();
+                 }
+-                region += content->translated(w->contentsRect().topLeft()) & w->contentsRect(); // LIKELY_BUG
++                // The surface blur region is in buffer-local coords; move it to
++                // frame coords with the buffer origin (contentsRect.topLeft()),
++                // then clip to the decoration's transparent inner rect.  Clipping
++                // to contentsRect() left the strip where the Aero titlebar glass
++                // overlaps the client outside the blurred client region, which
++                // showed through as a black line under the title bar.
++                region += content->translated(w->contentsRect().topLeft()) & w->decorationInnerRect();
+             }
+         } else if (frame.has_value()) {
+             region = frame.value();
+@@ -1243,7 +1256,7 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
+     if (w->decorationHasAlpha() && decorationSupportsBlurBehind(w)) {
+         // If the client hasn't specified a blur region, we'll only enable
+         // the effect behind the decoration.
+-        region &= w->contentsRect();
++        region &= w->decorationInnerRect();
+         region |= decorationBlurRegion(w);
+ 
+     }
