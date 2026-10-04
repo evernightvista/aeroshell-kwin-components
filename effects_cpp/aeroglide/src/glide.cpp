@@ -42,8 +42,7 @@ static const QSet<QString> s_blacklist{
     QStringLiteral("aeroshell-splash aeroshell-splash"),
     QStringLiteral("polkit-kde-authentication-agent-1 polkit-kde-authentication-agent-1"),
     // Spectacle needs to be blacklisted in order to stay out of its own screenshots.
-    QStringLiteral("spectacle spectacle"), // x11
-    QStringLiteral("spectacle org.kde.spectacle"), // wayland
+    QStringLiteral("spectacle org.kde.spectacle"),
 
     // authentication windows
     QStringLiteral("kdesu kdesu"),
@@ -361,12 +360,6 @@ bool GlideEffect::isGlideWindow(EffectWindow *w) const
 
     // Don't animate the outline and the screenlocker as it looks bad.
     if (w->isLockScreen() || w->isOutline()) {
-        return false;
-    }
-
-    // Override-redirect windows are usually used for user interface
-    // concepts that are not expected to be animated by this effect.
-    if (w->isX11Client() && !w->isManaged()) {
         return false;
     }
 

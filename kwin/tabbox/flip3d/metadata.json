@@ -100,11 +100,15 @@
         "Id": "flip3d",
         "License": "GPL",
         "Name": "Flip 3D",
-        "Name[de]": "3D-Flip",
-        "Name[fr]": "Retournement 3D",
-        "Name[ja]": "3D フリップ",
-        "Name[ko]": "3D 플립",
-        "Name[zh_CN]": "3D 翻转",
-        "Name[zh_TW]": "3D 翻轉"
+        "Name[de]": "Flip 3D",
+        "Name[fr]": "Flip 3D",
+        "Name[ja]": "Flip 3D",
+        "Name[ko]": "Flip 3D",
+        "Name[pl]": "Flip 3D",
+        "Name[ru]": "Flip 3D",
+        "Name[sr@latin]": "Flip 3D",
+        "Name[zh_CN]": "Flip 3D",
+        "Name[zh_TW]": "Flip 3D",
+        "Description[sr@latin]": "Raspored za prebacivanje prozora koji prikazuje sličice kao 3D špil karata"
     }
 }

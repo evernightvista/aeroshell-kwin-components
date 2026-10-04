@@ -30,7 +30,7 @@ Item
         }
     }
     property bool inEditMode: false;
-    property bool compositingEnabled: (KWindowSystem.isPlatformX11 ? KX11Extras.compositingActive : true) && !inEditMode
+    property bool compositingEnabled: !inEditMode
     property bool showingDesktop: KWindowSystem.showingDesktop //false
     property real peekOpacity: showingDesktop ? 1 : 0
     property bool instantiatorActive: true

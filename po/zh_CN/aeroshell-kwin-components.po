@@ -1,608 +1,363 @@
-# aeroshell-kwin-components Chinese (Simplified) translation.
-# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# aeroshell-kwin-components Simplified Chinese translation.
+# Copyright (C) 2026 Inkatail
 # This file is distributed under the same license as the aeroshell-kwin-components package.
-#
+# SPDX-FileCopyrightText: 2026 Inkatail <mrinkatail@gmail.com>
 msgid ""
 msgstr ""
 "Project-Id-Version: aeroshell-kwin-components\n"
 "Report-Msgid-Bugs-To: https://gitgud.io/aeroshell/aeroshell-kwin-"
 "components/-/issues\n"
-"POT-Creation-Date: 2026-03-04 18:05+0100\n"
-"PO-Revision-Date: 2026-09-11 14:00+0800\n"
-"Last-Translator: Anonymous <noreply@localhost>\n"
-"Language-Team: Chinese (Simplified) <zh_CN@li.org>\n"
+"POT-Creation-Date: 2026-10-04 14:37+0000\n"
+"PO-Revision-Date: 2026-10-04 00:00+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: Simplified Chinese <none>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-
-#: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:122
-#: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:126
-#, kde-format
-msgid "Change the color of your window borders, Start menu, and taskbar"
-msgstr "更改窗口边框、开始菜单和任务栏的颜色"
-
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:218
-#. i18n: ectx: property (text), widget (QLabel, color_name_label)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:218
-#. i18n: ectx: property (text), widget (QLabel, color_name_label)
-#: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:347
-#: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:376
-#: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:351
-#: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:381
-#: rc.cpp:191 rc.cpp:413
-#, no-c-format, kde-format
-msgid "Current color: %1"
-msgstr "当前颜色：%1"
-
-#: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:390
-#: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:396
-#, kde-format
-msgid "Hide color mixer"
-msgstr "隐藏颜色混合器"
-
-#: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:391
-#: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:397
-#, kde-format
-msgid "Show color mixer"
-msgstr "显示颜色混合器"
+"X-Generator: Python script\n"
 
 #: kwin/tabbox/thumbnail_aero/contents/ui/main.qml:110
 #, kde-format
 msgid "Desktop"
 msgstr "桌面"
 
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide.kcfg:13
-#. i18n: ectx: label, entry (AccurateTilt), group (Effect-glide)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide.kcfg:13
-#. i18n: ectx: label, entry (AccurateTilt), group (Effect-glide)
-#: rc.cpp:3 rc.cpp:225
+#: effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:121
 #, kde-format
-msgid "Enables a more accurate tilt effect at a very minor performance cost."
-msgstr "以极小的性能代价启用更精确的倾斜效果。"
+msgid "Change the color of your window borders, Start menu, and taskbar"
+msgstr "更改窗口边框、开始菜单和任务栏的颜色"
 
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:19
-#. i18n: ectx: property (text), widget (QLabel, label_Duration)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:19
-#. i18n: ectx: property (text), widget (QLabel, label_Duration)
-#: rc.cpp:6 rc.cpp:228
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:218
+#. i18n: ectx: property (text), widget (QLabel, color_name_label)
+#: effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:346
+#: effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:375 rc.cpp:132
 #, kde-format
-msgid "Duration:"
-msgstr "持续时间："
+msgid "Current color: %1"
+msgstr "当前颜色：%1"
 
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:32
-#. i18n: ectx: property (specialValueText), widget (QSpinBox, kcfg_Duration)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:32
-#. i18n: ectx: property (specialValueText), widget (QSpinBox, kcfg_Duration)
-#: rc.cpp:9 rc.cpp:231
+#: effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:389
 #, kde-format
-msgid "Default"
-msgstr "默认"
+msgid "Hide color mixer"
+msgstr "隐藏颜色混合器"
 
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:35
-#. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_Duration)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:35
-#. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_Duration)
-#: rc.cpp:12 rc.cpp:234
+#: effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.cpp:390
 #, kde-format
-msgid " milliseconds"
-msgstr " 毫秒"
+msgid "Show color mixer"
+msgstr "显示颜色混合器"
 
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:50
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_AccurateTilt)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:50
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_AccurateTilt)
-#: rc.cpp:15 rc.cpp:237
+#. i18n: file: ./kwin/effects/loginaero/contents/ui/config.ui:17
+#. i18n: ectx: property (text), widget (QCheckBox, kcfg_FadeToBlack)
+#: rc.cpp:3
 #, kde-format
-msgid "Enable a more accurate tilt effect."
-msgstr "启用更精确的倾斜效果。"
+msgid "Fade to black (fullscreen splash screens only)"
+msgstr "淡入黑色（仅全屏启动画面）"
 
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:60
-#. i18n: ectx: property (title), widget (QGroupBox, groupBox_InAnimation)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:60
-#. i18n: ectx: property (title), widget (QGroupBox, groupBox_InAnimation)
-#: rc.cpp:18 rc.cpp:240
-#, kde-format
-msgid "Window Open Animation"
-msgstr "窗口打开动画"
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:66
-#. i18n: ectx: property (text), widget (QLabel, label_InRotationEdge)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:164
-#. i18n: ectx: property (text), widget (QLabel, label_OutRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:66
-#. i18n: ectx: property (text), widget (QLabel, label_InRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:164
-#. i18n: ectx: property (text), widget (QLabel, label_OutRotationEdge)
-#: rc.cpp:21 rc.cpp:45 rc.cpp:243 rc.cpp:267
-#, kde-format
-msgid "Rotation edge:"
-msgstr "旋转边缘："
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:80
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:178
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:80
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:178
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#: rc.cpp:24 rc.cpp:48 rc.cpp:246 rc.cpp:270
-#, kde-format
-msgid "Top"
-msgstr "顶部"
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:85
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:183
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:85
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:183
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#: rc.cpp:27 rc.cpp:51 rc.cpp:249 rc.cpp:273
-#, kde-format
-msgid "Right"
-msgstr "右侧"
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:90
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:188
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:90
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:188
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#: rc.cpp:30 rc.cpp:54 rc.cpp:252 rc.cpp:276
-#, kde-format
-msgid "Bottom"
-msgstr "底部"
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:95
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:193
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:95
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:193
-#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
-#: rc.cpp:33 rc.cpp:57 rc.cpp:255 rc.cpp:279
-#, kde-format
-msgid "Left"
-msgstr "左侧"
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:103
-#. i18n: ectx: property (text), widget (QLabel, label_InRotationAngle)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:201
-#. i18n: ectx: property (text), widget (QLabel, label_OutRotationAngle)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:103
-#. i18n: ectx: property (text), widget (QLabel, label_InRotationAngle)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:201
-#. i18n: ectx: property (text), widget (QLabel, label_OutRotationAngle)
-#: rc.cpp:36 rc.cpp:60 rc.cpp:258 rc.cpp:282
-#, kde-format
-msgid "Rotation angle:"
-msgstr "旋转角度："
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:129
-#. i18n: ectx: property (text), widget (QLabel, label_InDistance)
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:208
-#. i18n: ectx: property (text), widget (QLabel, label_OutDistance)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:129
-#. i18n: ectx: property (text), widget (QLabel, label_InDistance)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:208
-#. i18n: ectx: property (text), widget (QLabel, label_OutDistance)
-#: rc.cpp:39 rc.cpp:63 rc.cpp:261 rc.cpp:285
-#, kde-format
-msgid "Distance:"
-msgstr "距离："
-
-#. i18n: file: effects_cpp/wayland/aeroglide/src/glide_config.ui:158
-#. i18n: ectx: property (title), widget (QGroupBox, groupBox_OutAnimation)
-#. i18n: file: effects_cpp/x11/aeroglide/src/glide_config.ui:158
-#. i18n: ectx: property (title), widget (QGroupBox, groupBox_OutAnimation)
-#: rc.cpp:42 rc.cpp:264
-#, kde-format
-msgid "Window Close Animation"
-msgstr "窗口关闭动画"
-
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:27
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:27
 #. i18n: ectx: attribute (title), widget (QWidget, blurWidget)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:27
-#. i18n: ectx: attribute (title), widget (QWidget, blurWidget)
-#: rc.cpp:66 rc.cpp:288
+#: rc.cpp:6
 #, kde-format
 msgctxt "Appearance tab in the blur KCM"
 msgid "Appearance"
 msgstr "外观"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:33
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:33
 #. i18n: ectx: property (text), widget (QLabel, labelConstantBlurDescription)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:33
-#. i18n: ectx: property (text), widget (QLabel, labelConstantBlurDescription)
-#: rc.cpp:69 rc.cpp:291
+#: rc.cpp:9
 #, kde-format
 msgid "Blur strength:"
 msgstr "模糊强度："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:58
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:58
 #. i18n: ectx: property (text), widget (QLabel, labelConstantBlurLight)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:58
-#. i18n: ectx: property (text), widget (QLabel, labelConstantBlurLight)
-#: rc.cpp:72 rc.cpp:294
+#: rc.cpp:12
 #, kde-format
 msgctxt "Low blur strength"
 msgid "Light"
-msgstr "轻微"
+msgstr "弱"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:90
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:90
 #. i18n: ectx: property (text), widget (QLabel, labelConstantBlurStrong)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:90
-#. i18n: ectx: property (text), widget (QLabel, labelConstantBlurStrong)
-#: rc.cpp:75 rc.cpp:297
+#: rc.cpp:15
 #, kde-format
 msgctxt "High blur strength"
 msgid "Strong"
-msgstr "强烈"
+msgstr "强"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:161
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:161
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableTransparency)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:161
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableTransparency)
-#: rc.cpp:78 rc.cpp:300
+#: rc.cpp:18
 #, kde-format
 msgid "Enable Transparency"
 msgstr "启用透明度"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:174
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:174
 #. i18n: ectx: property (text), widget (QLabel, label)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:174
-#. i18n: ectx: property (text), widget (QLabel, label)
-#: rc.cpp:81 rc.cpp:303
+#: rc.cpp:21
 #, kde-format
 msgid "Reflection texture:"
 msgstr "反射纹理："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:190
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:190
 #. i18n: ectx: property (toolTip), widget (QPushButton, browse_pushButton)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:190
-#. i18n: ectx: property (toolTip), widget (QPushButton, browse_pushButton)
-#: rc.cpp:84 rc.cpp:306
+#: rc.cpp:24
 #, kde-format
 msgid "Browse..."
 msgstr "浏览..."
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:203
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:203
 #. i18n: ectx: property (toolTip), widget (QPushButton, clear_pushButton)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:203
-#. i18n: ectx: property (toolTip), widget (QPushButton, clear_pushButton)
-#: rc.cpp:87 rc.cpp:309
+#: rc.cpp:27
 #, kde-format
 msgctxt "Reset the reflection texture"
 msgid "Clear"
 msgstr "清除"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:218
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:218
 #. i18n: ectx: property (text), widget (QLabel, label_2)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:218
-#. i18n: ectx: property (text), widget (QLabel, label_2)
-#: rc.cpp:90 rc.cpp:312
+#: rc.cpp:30
 #, kde-format
 msgid "Reflection intensity:"
 msgstr "反射强度："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:256
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:256
 #. i18n: ectx: property (text), widget (QLabel, reflectionLabel)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:256
-#. i18n: ectx: property (text), widget (QLabel, reflectionLabel)
-#: rc.cpp:94 rc.cpp:316
-#, no-c-format, kde-format
+#: rc.cpp:33
+#, kde-format
 msgid "100%"
 msgstr "100%"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:272
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:272
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_FollowPlasmaAccentColor)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:272
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_FollowPlasmaAccentColor)
+#: rc.cpp:36
 #, kde-format
 msgid "Follow KDE Plasma accent color"
 msgstr "跟随 KDE Plasma 强调色"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:278
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:0
 #. i18n: ectx: property (text), widget (QLabel, showAccentColor_label)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:278
-#. i18n: ectx: property (text), widget (QLabel, showAccentColor_label)
-#: rc.cpp:97 rc.cpp:319
+#: rc.cpp:39
 #, kde-format
 msgctxt "Don't change the HTML markup, just the human-readable text"
 msgid "<a href=\"no\">Change accent color</a>"
 msgstr "<a href=\"no\">更改强调色</a>"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:285
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:292
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_TranslateTexture)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:285
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_TranslateTexture)
-#: rc.cpp:100 rc.cpp:322
+#: rc.cpp:42
 #, kde-format
 msgid "Move the reflection texture along with the window"
-msgstr "反射纹理随窗口一起移动"
+msgstr "随窗口一起移动反射纹理"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:295
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:302
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_BasicColorization)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:295
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_BasicColorization)
-#: rc.cpp:103 rc.cpp:325
+#: rc.cpp:45
 #, kde-format
 msgid "Enable basic colorization"
-msgstr "启用基本着色"
+msgstr "启用基础着色"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:302
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:309
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_MaximizeColorization)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:302
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_MaximizeColorization)
-#: rc.cpp:106 rc.cpp:328
+#: rc.cpp:48
 #, kde-format
 msgid "Enable opaque colorization for maximized windows"
 msgstr "为最大化窗口启用不透明着色"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:309
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:316
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableCornerGlow)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:309
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableCornerGlow)
-#: rc.cpp:109 rc.cpp:331
+#: rc.cpp:51
 #, kde-format
 msgid "Display corner glow textures"
-msgstr "显示边角辉光纹理"
+msgstr "显示角落光晕纹理"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:330
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:337
 #. i18n: ectx: attribute (title), widget (QWidget, forceBlurWidget)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:330
-#. i18n: ectx: attribute (title), widget (QWidget, forceBlurWidget)
-#: rc.cpp:112 rc.cpp:334
+#: rc.cpp:54
 #, kde-format
 msgctxt "Overrides tab in the blur KCM"
 msgid "Overrides"
 msgstr "覆盖"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:339
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:346
 #. i18n: ectx: property (text), widget (QLabel, classLabel)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:339
-#. i18n: ectx: property (text), widget (QLabel, classLabel)
-#: rc.cpp:115 rc.cpp:337
+#: rc.cpp:57
 #, kde-format
 msgid "Classes of windows to force blur:"
-msgstr "需要强制模糊的窗口类别："
+msgstr "强制模糊的窗口类："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:346
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:353
 #. i18n: ectx: property (text), widget (QLabel, label_3)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:346
-#. i18n: ectx: property (text), widget (QLabel, label_3)
-#: rc.cpp:118 rc.cpp:340
+#: rc.cpp:60
 #, kde-format
 msgid "Classes of Firefox windows to apply custom blur:"
-msgstr "需要应用自定义模糊的 Firefox 窗口类别："
+msgstr "应用自定义模糊的 Firefox 窗口类："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:353
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:360
 #. i18n: ectx: property (text), widget (QLabel, label_noblur)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:353
-#. i18n: ectx: property (text), widget (QLabel, label_noblur)
-#: rc.cpp:121 rc.cpp:343
+#: rc.cpp:63
 #, kde-format
 msgid "Classes of windows to not apply blur (regex):"
-msgstr "不应用模糊的窗口类别（正则表达式）："
+msgstr "不应用模糊的窗口类（正则表达式）："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:360
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:367
 #. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_WindowClasses)
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:367
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:367
 #. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_BlurFirefox)
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:374
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:367
 #. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_NoBlurWindowClasses)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:360
-#. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_WindowClasses)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:367
-#. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_BlurFirefox)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:374
-#. i18n: ectx: property (toolTip), widget (QPlainTextEdit, kcfg_NoBlurWindowClasses)
-#: rc.cpp:124 rc.cpp:127 rc.cpp:130 rc.cpp:346 rc.cpp:349 rc.cpp:352
+#: rc.cpp:66 rc.cpp:69 rc.cpp:72
 #, kde-format
 msgid "One window class per line."
-msgstr "每行一个窗口类别。"
+msgstr "每行一个窗口类。"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:386
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:393
 #. i18n: ectx: property (text), widget (QRadioButton, kcfg_BlurMatching)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:386
-#. i18n: ectx: property (text), widget (QRadioButton, kcfg_BlurMatching)
-#: rc.cpp:133 rc.cpp:355
+#: rc.cpp:75
 #, kde-format
 msgid "Apply force blur list"
 msgstr "应用强制模糊列表"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:395
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:402
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_BlurMenus)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:395
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_BlurMenus)
-#: rc.cpp:136 rc.cpp:358
+#: rc.cpp:78
 #, kde-format
 msgid "Blur menus"
 msgstr "模糊菜单"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:402
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:409
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_BlurDocks)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:402
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_BlurDocks)
-#: rc.cpp:139 rc.cpp:361
+#: rc.cpp:81
 #, kde-format
 msgctxt "Blur windows that have a 'dock' type"
 msgid "Blur docks"
 msgstr "模糊停靠栏"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:409
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:416
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_OpaqueKrunner)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:409
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_OpaqueKrunner)
-#: rc.cpp:142 rc.cpp:364
+#: rc.cpp:84
 #, kde-format
 msgid "Make KRunner opaque"
 msgstr "使 KRunner 不透明"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:416
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:423
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_OpaqueOSD)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:416
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_OpaqueOSD)
-#: rc.cpp:145 rc.cpp:367
+#: rc.cpp:87
 #, kde-format
 msgctxt "Toggle opaqueness for OSDs"
 msgid "Make on screen displays opaque"
-msgstr "使屏幕显示（OSD）不透明"
+msgstr "使屏幕显示不透明"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:423
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:430
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_PaintAsTranslucent)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:423
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_PaintAsTranslucent)
-#: rc.cpp:148 rc.cpp:370
+#: rc.cpp:90
 #, kde-format
 msgid ""
 "Paint windows as non-opaque (fixes artifacts for some transparent windows)"
-msgstr "将窗口绘制为半透明（修复某些透明窗口的渲染异常）"
+msgstr "将窗口绘制为非不透明（修复某些透明窗口的伪影）"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:430
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:437
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_FirefoxHollowRegion)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:430
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_FirefoxHollowRegion)
-#: rc.cpp:151 rc.cpp:373
+#: rc.cpp:93
 #, kde-format
 msgid ""
 "Don't render blur on the inside of Firefox windows (disabling this reduces "
 "performance)"
-msgstr "不要在 Firefox 窗口内部渲染模糊效果（禁用此项会降低性能）"
+msgstr "不在 Firefox 窗口内部渲染模糊（禁用此项会降低性能）"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:450
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:457
 #. i18n: ectx: property (text), widget (QLabel, label_4)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:450
-#. i18n: ectx: property (text), widget (QLabel, label_4)
-#: rc.cpp:154 rc.cpp:376
+#: rc.cpp:96
 #, kde-format
 msgid "Firefox blur corner radius (radius gets DPI scaled by the effect)"
-msgstr "Firefox 模糊圆角半径（半径会随效果按 DPI 缩放）"
+msgstr "Firefox 模糊圆角半径（半径由效果按 DPI 缩放）"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:469
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:476
 #. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_FirefoxBlurTopMargin)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:469
-#. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_FirefoxBlurTopMargin)
-#: rc.cpp:157 rc.cpp:379
+#: rc.cpp:99
 #, kde-format
 msgctxt "Pixel unit suffix"
 msgid "px"
 msgstr "px"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:482
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:489
 #. i18n: ectx: property (text), widget (QLabel, label_5)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:482
-#. i18n: ectx: property (text), widget (QLabel, label_5)
-#: rc.cpp:160 rc.cpp:382
+#: rc.cpp:102
 #, kde-format
 msgid "Firefox blur top margin"
 msgstr "Firefox 模糊顶部边距"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:499
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:506
 #. i18n: ectx: property (text), widget (QLabel, label_19)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:499
-#. i18n: ectx: property (text), widget (QLabel, label_19)
-#: rc.cpp:163 rc.cpp:385
+#: rc.cpp:105
 #, kde-format
 msgid "Intensity:"
 msgstr "强度："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:506
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:513
 #. i18n: ectx: property (text), widget (QLabel, label_18)
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:495
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:495
 #. i18n: ectx: property (text), widget (QLabel, label_2)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:506
-#. i18n: ectx: property (text), widget (QLabel, label_18)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:495
-#. i18n: ectx: property (text), widget (QLabel, label_2)
-#: rc.cpp:166 rc.cpp:210 rc.cpp:388 rc.cpp:432
+#: rc.cpp:108 rc.cpp:150
 #, kde-format
 msgid "Hue:"
 msgstr "色相："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:513
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:520
 #. i18n: ectx: property (text), widget (QLabel, label_17)
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:650
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:650
 #. i18n: ectx: property (text), widget (QLabel, label_3)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:513
-#. i18n: ectx: property (text), widget (QLabel, label_17)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:650
-#. i18n: ectx: property (text), widget (QLabel, label_3)
-#: rc.cpp:169 rc.cpp:213 rc.cpp:391 rc.cpp:435
+#: rc.cpp:111 rc.cpp:153
 #, kde-format
 msgid "Saturation:"
 msgstr "饱和度："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:520
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:527
 #. i18n: ectx: property (text), widget (QLabel, label_16)
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:464
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:464
 #. i18n: ectx: property (text), widget (QLabel, label_4)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:520
-#. i18n: ectx: property (text), widget (QLabel, label_16)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:464
-#. i18n: ectx: property (text), widget (QLabel, label_4)
-#: rc.cpp:172 rc.cpp:207 rc.cpp:394 rc.cpp:429
+#: rc.cpp:114 rc.cpp:147
 #, kde-format
 msgid "Brightness:"
 msgstr "亮度："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:527
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:534
 #. i18n: ectx: property (text), widget (QLabel, label_15)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:527
-#. i18n: ectx: property (text), widget (QLabel, label_15)
-#: rc.cpp:175 rc.cpp:397
+#: rc.cpp:117
 #, kde-format
 msgid "Red:"
 msgstr "红色："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:534
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:541
 #. i18n: ectx: property (text), widget (QLabel, label_14)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:534
-#. i18n: ectx: property (text), widget (QLabel, label_14)
-#: rc.cpp:178 rc.cpp:400
+#: rc.cpp:120
 #, kde-format
 msgid "Green:"
 msgstr "绿色："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:541
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:548
 #. i18n: ectx: property (text), widget (QLabel, label_13)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:541
-#. i18n: ectx: property (text), widget (QLabel, label_13)
-#: rc.cpp:181 rc.cpp:403
+#: rc.cpp:123
 #, kde-format
 msgid "Blue:"
 msgstr "蓝色："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.ui:548
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:555
 #. i18n: ectx: property (text), widget (QLabel, label_12)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/blur_config.ui:548
-#. i18n: ectx: property (text), widget (QLabel, label_12)
-#: rc.cpp:184 rc.cpp:406
+#: rc.cpp:126
 #, kde-format
 msgid "Color Balance:"
-msgstr "颜色平衡："
+msgstr "色彩平衡："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:154
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:154
 #. i18n: ectx: property (text), widget (QLabel, colorPaletteLabel)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:154
-#. i18n: ectx: property (text), widget (QLabel, colorPaletteLabel)
-#: rc.cpp:187 rc.cpp:409
+#: rc.cpp:129
 #, kde-format
 msgid "Color Palette:"
 msgstr "调色板："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:244
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:243
 #. i18n: ectx: property (toolTip), widget (QCheckBox, kcfg_EnableTransparency)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:244
-#. i18n: ectx: property (toolTip), widget (QCheckBox, kcfg_EnableTransparency)
-#: rc.cpp:194 rc.cpp:416
+#: rc.cpp:135
 #, kde-format
 msgid ""
 "Enables/disables the transparency of the entire theme. \n"
@@ -611,64 +366,163 @@ msgstr ""
 "启用/禁用整个主题的透明度。\n"
 "注意：此设置不影响合成设置。"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:247
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:247
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableTransparency)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:247
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_EnableTransparency)
-#: rc.cpp:198 rc.cpp:420
+#: rc.cpp:138
 #, kde-format
 msgid "Enable transparency"
 msgstr "启用透明度"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:284
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:284
 #. i18n: ectx: property (text), widget (QLabel, label)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:284
-#. i18n: ectx: property (text), widget (QLabel, label)
-#: rc.cpp:201 rc.cpp:423
+#: rc.cpp:141
 #, kde-format
 msgid "Color intensity:"
 msgstr "颜色强度："
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:369
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:0
 #. i18n: ectx: property (text), widget (QLabel, colorMixerLabel)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:369
-#. i18n: ectx: property (text), widget (QLabel, colorMixerLabel)
-#: rc.cpp:204 rc.cpp:426
+#: rc.cpp:144
 #, kde-format
 msgctxt "Don't change the HTML markup, just the human-readable text"
 msgid "<a href=\"no\" style=\"color: #0066D4\">Show color mixer</a>"
 msgstr "<a href=\"no\" style=\"color: #0066D4\">显示颜色混合器</a>"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:744
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:744
 #. i18n: ectx: property (text), widget (QPushButton, apply_Button)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:744
-#. i18n: ectx: property (text), widget (QPushButton, apply_Button)
-#: rc.cpp:216 rc.cpp:438
+#: rc.cpp:156
 #, kde-format
 msgid "Apply"
 msgstr "应用"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:769
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:769
 #. i18n: ectx: property (text), widget (QPushButton, saveChanges_Button)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:769
-#. i18n: ectx: property (text), widget (QPushButton, saveChanges_Button)
-#: rc.cpp:219 rc.cpp:441
+#: rc.cpp:159
 #, kde-format
 msgid "Save Changes"
 msgstr "保存更改"
 
-#. i18n: file: effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:794
+#. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:794
 #. i18n: ectx: property (text), widget (QPushButton, cancel_Button)
-#. i18n: file: effects_cpp/x11/kde-effects-aeroglassblur/src/kcm/mainwindow.ui:794
-#. i18n: ectx: property (text), widget (QPushButton, cancel_Button)
-#: rc.cpp:222 rc.cpp:444
+#: rc.cpp:162
 #, kde-format
 msgid "Cancel"
 msgstr "取消"
 
-#. i18n: file: kwin/effects/loginaero/contents/ui/config.ui:17
-#. i18n: ectx: property (text), widget (QCheckBox, kcfg_FadeToBlack)
-#: rc.cpp:447
+#. i18n: file: ./effects_cpp/aeroglide/src/glide.kcfg:13
+#. i18n: ectx: label, entry (AccurateTilt), group (Effect-glide)
+#: rc.cpp:165
 #, kde-format
-msgid "Fade to black (fullscreen splash screens only)"
-msgstr "淡出至黑色（仅限全屏启动画面）"
+msgid "Enables a more accurate tilt effect at a very minor performance cost."
+msgstr "以极小的性能开销启用更精确的倾斜效果。"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:19
+#. i18n: ectx: property (text), widget (QLabel, label_Duration)
+#: rc.cpp:168
+#, kde-format
+msgid "Duration:"
+msgstr "持续时间："
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:32
+#. i18n: ectx: property (specialValueText), widget (QSpinBox, kcfg_Duration)
+#: rc.cpp:171
+#, kde-format
+msgid "Default"
+msgstr "默认"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:35
+#. i18n: ectx: property (suffix), widget (QSpinBox, kcfg_Duration)
+#: rc.cpp:174
+#, kde-format
+msgid " milliseconds"
+msgstr " 毫秒"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:50
+#. i18n: ectx: property (text), widget (QCheckBox, kcfg_AccurateTilt)
+#: rc.cpp:177
+#, kde-format
+msgid "Enable a more accurate tilt effect."
+msgstr "启用更精确的倾斜效果。"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:60
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_InAnimation)
+#: rc.cpp:180
+#, kde-format
+msgid "Window Open Animation"
+msgstr "窗口打开动画"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:66
+#. i18n: ectx: property (text), widget (QLabel, label_InRotationEdge)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:66
+#. i18n: ectx: property (text), widget (QLabel, label_OutRotationEdge)
+#: rc.cpp:183 rc.cpp:207
+#, kde-format
+msgid "Rotation edge:"
+msgstr "旋转边缘："
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:80
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:80
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
+#: rc.cpp:186 rc.cpp:210
+#, kde-format
+msgid "Top"
+msgstr "顶部"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:85
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:85
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
+#: rc.cpp:189 rc.cpp:213
+#, kde-format
+msgid "Right"
+msgstr "右侧"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:90
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:90
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
+#: rc.cpp:192 rc.cpp:216
+#, kde-format
+msgid "Bottom"
+msgstr "底部"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:95
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_InRotationEdge)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:95
+#. i18n: ectx: property (text), item, widget (QComboBox, kcfg_OutRotationEdge)
+#: rc.cpp:195 rc.cpp:219
+#, kde-format
+msgid "Left"
+msgstr "左侧"
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:103
+#. i18n: ectx: property (text), widget (QLabel, label_InRotationAngle)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:103
+#. i18n: ectx: property (text), widget (QLabel, label_OutRotationAngle)
+#: rc.cpp:198 rc.cpp:222
+#, kde-format
+msgid "Rotation angle:"
+msgstr "旋转角度："
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:129
+#. i18n: ectx: property (text), widget (QLabel, label_InDistance)
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:129
+#. i18n: ectx: property (text), widget (QLabel, label_OutDistance)
+#: rc.cpp:201 rc.cpp:225
+#, kde-format
+msgid "Distance:"
+msgstr "距离："
+
+#. i18n: file: ./effects_cpp/aeroglide/src/glide_config.ui:158
+#. i18n: ectx: property (title), widget (QGroupBox, groupBox_OutAnimation)
+#: rc.cpp:204
+#, kde-format
+msgid "Window Close Animation"
+msgstr "窗口关闭动画"
+
+#, kde-format
+#~ msgid ""
+#~ "When enabled, the accent color is automatically taken from the current "
+#~ "KDE Plasma color scheme."
+#~ msgstr "启用后，强调色将自动从当前 KDE Plasma 配色方案中获取。"

@@ -1,9 +1,9 @@
 %define KF6_MIN_VERSION 6.7.0
-%define KWIN_VERSION 6.7.90
+%define KWIN_VERSION 6.7.91
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -51,7 +51,7 @@ BuildRequires:  libepoxy-devel
 BuildRequires:  libdrm-devel
 
 # Runtime
-Requires:       kwin >= %{KWIN_VERSION}
+Requires:       kwin = %{KWIN_VERSION}
 Requires:       plasma-workspace-wayland
 
 %description
@@ -89,6 +89,7 @@ Development files for %{name}.
 %{_bindir}/aeroshell_update_default_rules
 %{_qt6_plugindir}/kwin/effects/plugins/aeroglassblur.so
 %{_qt6_plugindir}/kwin/effects/plugins/aeroglide.so
+%{_qt6_plugindir}/kwin/effects/plugins/libkwin_effect_smodsnap.so
 %{_qt6_plugindir}/kwin/effects/configs/kwin_aeroglassblur_config.so
 %{_qt6_plugindir}/kwin/effects/configs/kwin_aeroglide_config.so
 %{_datadir}/kwin/
@@ -96,6 +97,10 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+
+* Sun Oct 04 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-9
+- Add SMOD Snap
+- Fix BUG
 
 * Fri Sep 25 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-8
 - Fix kwin wayland error

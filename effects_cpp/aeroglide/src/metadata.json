@@ -99,7 +99,9 @@
         "Name[vi]": "Lướt",
         "Name[x-test]": "xxGlidexx",
         "Name[zh_CN]": "滑翔动效",
-        "Name[zh_TW]": "滑行"
+        "Name[zh_TW]": "滑行",
+        "Name[sr@latin]": "Aero Glide",
+        "Description[sr@latin]": "Klizanje prozora prilikom njihovog pojavljivanja ili nestajanja, uz očuvanje Aero staklastog efekta"
     },
     "X-KDE-ConfigModule": "kwin_aeroglide_config",
     "org.kde.kwin.effect": {

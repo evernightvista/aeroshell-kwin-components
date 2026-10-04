@@ -11,6 +11,7 @@ kconfig_add_kcfg_files(aeroglassblur_SOURCES
 )
 
 add_library(aeroglassblur MODULE ${aeroglassblur_SOURCES})
+target_compile_definitions(aeroglassblur PRIVATE "KWIN_BUILD_WAYLAND")
 qt6_generate_wayland_protocol_server_sources(aeroglassblur
     "PRIVATE_CODE"
     FILES

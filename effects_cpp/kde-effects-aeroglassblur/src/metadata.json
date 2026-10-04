@@ -23,7 +23,11 @@
         "Name[ko]": "에어로 글래스 흐림",
         "Name[pl]": "Rozmycie Aero",
         "Name[zh_CN]": "Aero 毛玻璃模糊",
-        "Name[zh_TW]": "Aero 毛玻璃模糊"
+        "Name[zh_TW]": "Aero 毛玻璃模糊",
+        "Name[ru]": "Размытие Aero Glass",
+        "Name[sr@latin]": "Aero Glass zamagljivanje",
+        "Description[ru]": "Размывает фон за окнами в стиле Windows 7 и Vista. Конфликтует с оригинальным эффектом размытия!",
+        "Description[sr@latin]": "Zamagljuje pozadinu iza prozora u stilu Windows 7 i Vista. U sukobu je sa originalnim efektom zamagljivanja!"
     },
     "X-KDE-ConfigModule": "kwin_aeroglassblur_config",
     "org.kde.kwin.effect": {

@@ -999,21 +999,62 @@ bool BlurEffect::decorationSupportsBlurBehind(const EffectWindow *w) const
 
 QRectF BlurEffect::decorationInnerRect(const EffectWindow *w) const
 {
-    QRectF rect = w->rect();
-    if (!w->decoration()) {
+    // EffectWindow::decorationInnerRect() is rect() - frameMargins(), which is
+    // effectively the window's client area. The decoration's border*() values
+    // are NOT equivalent to frameMargins() and can become inconsistent while a
+    // window is being dragged, resized, or its decoration theme is updating.
+    // When that happens the title bar loses its blur background because the
+    // computed decoration region shrinks to nothing. Use contentsRect() --
+    // which is derived from the window's actual client geometry -- as the
+    // reliable base instead.
+    const QRectF rect = w->contentsRect();
+
+    const auto *deco = w->decoration();
+    if (!deco) {
         return rect;
     }
-    // Equivalent to upstream EffectWindow::decorationInnerRect(), which is
-    // `window->rect() - window->frameMargins()`. frameMargins() is the decoration
-    // borders; they are exposed on KDecoration3::Decoration as border{Left,Top,
-    // Right,Bottom}(). When the decoration's glass overlaps the client area, this
-    // rect extends slightly above w->contentsRect(); clipping the blur to
-    // contentsRect() leaves a 1-3px black seam right below the title bar.
-    const qreal left = w->decoration()->borderLeft();
-    const qreal top = w->decoration()->borderTop();
-    const qreal right = w->decoration()->borderRight();
-    const qreal bottom = w->decoration()->borderBottom();
-    return rect.adjusted(left, top, -right, -bottom);
+
+    const QRectF decorRect = deco->rect();
+    if (decorRect.isEmpty()) {
+        return rect;
+    }
+
+    // The decoration's glass may overlap the client area by a few pixels,
+    // which leaves a 1-3px dark seam right below the title bar when the blur
+    // is clipped strictly to contentsRect(). Reconstruct the decoration's
+    // inner rect from its border values so the blur can extend across that
+    // seam -- but only trust the result when it agrees with contentsRect().
+    // While dragging, resizing, or hovering a window the decoration's
+    // border*() values can lag behind and produce a decorInner that covers
+    // the whole title bar (or the whole decoration). Uniting contentsRect
+    // with such a decorInner would wipe out the title bar blur region, so in
+    // that case contentsRect() is the safe fallback.
+    const qreal left = deco->borderLeft();
+    const qreal top = deco->borderTop();
+    const qreal right = deco->borderRight();
+    const qreal bottom = deco->borderBottom();
+
+    if (left < 0 || top < 0 || right < 0 || bottom < 0) {
+        return rect;
+    }
+    if (left + right >= decorRect.width() || top + bottom >= decorRect.height()) {
+        return rect;
+    }
+
+    const QRectF decorInner = decorRect.adjusted(left, top, -right, -bottom);
+
+    // A genuine client/decoration overlap is at most a few pixels. If
+    // decorInner differs from contentsRect() by more than this on any edge,
+    // the borders are in flux and we must not use decorInner.
+    constexpr qreal kMaxSeam = 8.0;
+    if (std::abs(decorInner.left()   - rect.left())   <= kMaxSeam &&
+        std::abs(decorInner.top()    - rect.top())    <= kMaxSeam &&
+        std::abs(decorInner.right()  - rect.right())  <= kMaxSeam &&
+        std::abs(decorInner.bottom() - rect.bottom()) <= kMaxSeam) {
+        return decorInner;
+    }
+
+    return rect;
 }
 
 RegionF BlurEffect::decorationBlurRegion(const EffectWindow *w) const
@@ -1022,17 +1063,22 @@ RegionF BlurEffect::decorationBlurRegion(const EffectWindow *w) const
         return {};
     }
 
+    // Use the full decoration frame (decoration rect minus inner client rect)
+    // rather than intersecting with decoration->blurRegion().  Some decorations
+    // (e.g. Klassy) report a blur region that does not cover the rounded title
+    // bar corners, which leaves the top-left/top-right corners uncolored.
+    // The Aero Glass effect needs to colorize the entire title bar including
+    // its rounded corners; the decoration paints its own controls (buttons,
+    // title text) on top of the blurred/colorized background.
     RegionF decorationRegion = RegionF(w->decoration()->rect()) - decorationInnerRect(w);
-    //! we return only blurred regions that belong to decoration region
-    RegionF blurRegion = decorationRegion.intersected(RegionF(w->decoration()->blurRegion()));
 
     // Apply rounded corners to fix residual corner artifacts with decorations
     // like klassy that have rounded corners but return a rectangular blur region
     if (w->decorationHasAlpha()) {
-        blurRegion = roundedCornerDecorationRegion(w, blurRegion);
+        decorationRegion = roundedCornerDecorationRegion(w, decorationRegion);
     }
 
-    return blurRegion;
+    return decorationRegion;
 }
 
 RegionF BlurEffect::roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const
@@ -1048,7 +1094,11 @@ RegionF BlurEffect::roundedCornerDecorationRegion(const EffectWindow *w, const R
     }
 
     const QRectF decorRect = w->decoration()->rect();
-    const QRectF contentsRect = w->contentsRect();
+    // Use decorationInnerRect() (not contentsRect()) for consistency with
+    // decorationBlurRegion(), which subtracts the same inner rect from the
+    // decoration rect. Using contentsRect() here would mismatch the blur
+    // region and leave square-corner fragments along the seam.
+    const QRectF innerRect = decorationInnerRect(w);
 
     // If the base region is empty, nothing to round
     if (baseRegion.isEmpty()) {
@@ -1059,8 +1109,8 @@ RegionF BlurEffect::roundedCornerDecorationRegion(const EffectWindow *w, const R
     QRectF baseBounding = baseRegion.boundingRect();
     qreal baseArea = baseBounding.width() * baseBounding.height();
     qreal decorArea = decorRect.width() * decorRect.height();
-    qreal contentsArea = contentsRect.width() * contentsRect.height();
-    qreal expectedDecorArea = decorArea - contentsArea;
+    qreal innerArea = innerRect.width() * innerRect.height();
+    qreal expectedDecorArea = decorArea - innerArea;
 
     // If the base region doesn't cover most of the decoration area,
     // it already has a custom shape, don't modify it
@@ -1079,16 +1129,23 @@ RegionF BlurEffect::roundedCornerDecorationRegion(const EffectWindow *w, const R
         return baseRegion;
     }
 
-    const qreal scale = w->screen()->scale();
-    const qreal radius = cornerRadius * scale;
+    // decorRect and innerRect are in logical pixels (the same coordinate space
+    // as EffectWindow::rect()), so the corner radius must also be in logical
+    // pixels.  Multiplying by screen()->scale() would express the radius in
+    // device pixels and over-round the region on HiDPI screens, excluding the
+    // title-bar corner pixels from the blur/colorize area.  The shader's SDF
+    // clip (basic.frag) handles the device-pixel rounding independently using
+    // windowCornerRadius() * viewport.scale() on the device-pixel
+    // scaledBackgroundRect, so the region rounding here must stay logical.
+    const qreal radius = cornerRadius;
 
     // Create a rounded rect that covers the decoration area
     QPainterPath path;
     path.addRoundedRect(decorRect, radius, radius);
 
-    // Subtract the contents area from the rounded rect to get only the decoration area
+    // Subtract the inner area from the rounded rect to get only the decoration area
     RegionF roundedRegion(path.toFillPolygon().toPolygon());
-    roundedRegion -= RegionF(contentsRect);
+    roundedRegion -= RegionF(innerRect);
 
     // Intersect with the original base region to preserve any existing shape
     roundedRegion = roundedRegion.intersected(baseRegion);
@@ -1221,7 +1278,11 @@ RegionF BlurEffect::roundedWindowRegion(const EffectWindow *w, const RegionF &ba
         cornerRadius = 4;
     }
 
-    const qreal radius = cornerRadius * w->screen()->scale();
+    // w->rect() is in logical pixels (frame-local), so the radius must be in
+    // logical pixels too.  See roundedCornerDecorationRegion() for the full
+    // explanation: multiplying by screen()->scale() over-rounds the region on
+    // HiDPI screens and clips the title-bar corners out of the blur area.
+    const qreal radius = cornerRadius;
 
     // The composed blur region is in frame-local coordinates, exactly like
     // EffectWindow::rect(). Intersecting it with a rounded rectangle removes the

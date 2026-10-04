@@ -19,35 +19,12 @@
 namespace KWin
 {
 
-namespace
-{
-
-class ScopedApplicationDomain
-{
-public:
-    explicit ScopedApplicationDomain(const QByteArray &domain)
-        : m_previous(KLocalizedString::applicationDomain())
-    {
-        KLocalizedString::setApplicationDomain(domain);
-    }
-
-    ~ScopedApplicationDomain()
-    {
-        KLocalizedString::setApplicationDomain(m_previous);
-    }
-
-private:
-    QByteArray m_previous;
-};
-
-}
-
 K_PLUGIN_CLASS(GlideEffectConfig)
 
 GlideEffectConfig::GlideEffectConfig(QObject *parent, const KPluginMetaData &data)
     : KCModule(parent, data)
 {
-    const ScopedApplicationDomain translationDomain(QByteArrayLiteral("aeroshell-kwin-components"));
+    KLocalizedString::setApplicationDomain("aeroshell-kwin-components");
     ui.setupUi(widget());
     GlideConfig::instance(KWIN_CONFIG);
     addConfig(GlideConfig::self(), widget());

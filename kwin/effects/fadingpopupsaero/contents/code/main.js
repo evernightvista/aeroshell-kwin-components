@@ -50,7 +50,7 @@ function isPopupWindow(window) {
         return false;
     }
 
-    if(window.specialWindow && (window.windowClass == "kwin_x11 kwin" || window.windowClass == "kwin_wayland kwin")) {
+    if(window.specialWindow && window.windowClass == "kwin_wayland kwin") {
         return false;
     }
     //console.log(window.windowClass + " " + window.dialog);
@@ -84,7 +84,7 @@ function isPopupWindow(window) {
 
     // Override-redirect windows are usually used for user interface
     // concepts that are expected to be animated by this effect, e.g.
-    // popups that contain window thumbnails on X11, etc.
+    // popups that contain window thumbnails, etc.
     if (!window.managed) {
         // Some utility windows can look like popup windows (e.g. the
         // address bar dropdown in Firefox), but we don't want to fade

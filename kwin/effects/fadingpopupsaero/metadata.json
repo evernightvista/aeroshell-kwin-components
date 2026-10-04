@@ -135,8 +135,9 @@
         "Name[vi]": "Ô bật lên ngả màu",
         "Name[x-test]": "xxFading Popupsxx",
         "Name[zh_CN]": "气泡显隐渐变动画",
-        "Name[zh_TW]": "淡化彈出視窗"
-
+        "Name[zh_TW]": "淡化彈出視窗",
+        "Name[sr@latin]": "Polako nestajući iskačući prozori",
+        "Description[sr@latin]": "Učiniti da iskačući prozori glatko uđu i izađu kada se prikažu ili sakriju"
     },
     "X-KDE-Ordering": 60,
     "X-Plasma-API": "javascript"

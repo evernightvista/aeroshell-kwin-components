@@ -25,5 +25,4 @@ target_link_libraries(kwin_aeroglassblur_config
     Qt6::DBus
     KF6::WindowSystem
 )
-
 install(TARGETS kwin_aeroglassblur_config DESTINATION ${KDE_INSTALL_PLUGINDIR}/kwin/effects/configs)

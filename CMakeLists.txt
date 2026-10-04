@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(PROJECT_VERSION "6.8.0")
 set(PROJECT_VERSION_MAJOR 6)
-set(KF6_MIN_VERSION "6.3.0")
+set(KF6_MIN_VERSION "6.0.0")
 
 option(KWIN_INSTALL_MISC "Install miscellaneous components" ON)
 
@@ -38,14 +38,13 @@ find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS
 
 find_package(KDecoration3 REQUIRED)
 
-find_package(KWin REQUIRED COMPONENTS
+ find_package(KWin REQUIRED COMPONENTS
     kwineffects
 )
-
 find_package(KWinDBusInterface CONFIG REQUIRED)
 
 find_package(epoxy REQUIRED)
-find_package(WaylandProtocols 1.48)
+find_package(WaylandProtocols 1.48 REQUIRED)
 set_package_properties(WaylandProtocols PROPERTIES
     TYPE REQUIRED
     PURPOSE "Collection of Wayland protocols that add functionality not available in the Wayland core protocol"
@@ -62,14 +61,10 @@ if(KWIN_INSTALL_MISC)
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/kwin/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/kwin)
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/outline DESTINATION ${CMAKE_INSTALL_PREFIX}/share/aeroshell)
     add_subdirectory(rules)
+    ki18n_install(po)
 else()
     message(STATUS "Skipping other KWin components")
 endif()
-
-# Translation catalogs belong to the effects and their KCMs as well.  Keep
-# them installed when a minimal build disables the optional miscellaneous
-# components.
-ki18n_install(po)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 

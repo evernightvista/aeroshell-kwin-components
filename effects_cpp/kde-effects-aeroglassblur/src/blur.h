@@ -116,12 +116,15 @@ private:
     void configureAeroColors();
     RegionF blurRegion(EffectWindow *w) const;
     RegionF decorationBlurRegion(const EffectWindow *w) const;
-    // Geometry of the transparent rect in the decoration. On KWin versions that
-    // no longer expose EffectWindow::decorationInnerRect() (6.8 beta / v6.7.91),
-    // reproduce it as frame rect minus the decoration borders. This extends the
-    // blur region up to where the decoration actually ends, instead of clipping
-    // to the client buffer rect, which leaves a 1-3px black seam below the
-    // title bar on decorations that overlap the client area.
+    // Geometry of the transparent rect inside the decoration. Reproduces
+    // EffectWindow::decorationInnerRect() (rect() - frameMargins()) using
+    // contentsRect() as the reliable base, since the decoration's border*()
+    // values can lag behind while a window is dragged, resized, or hovered.
+    // When the borders are consistent with contentsRect() (within a few px,
+    // i.e. a genuine client/decoration overlap), the border-derived rect is
+    // used so the decoration blur still covers the 1-3px seam below the title
+    // bar. Otherwise contentsRect() is returned so the title bar keeps its
+    // blur background.
     QRectF decorationInnerRect(const EffectWindow *w) const;
     bool decorationSupportsBlurBehind(const EffectWindow *w) const;
     RegionF roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const;

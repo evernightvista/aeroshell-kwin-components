@@ -48,13 +48,16 @@
         "Id": "thumbnail_aero",
         "License": "AGPLv3",
         "Name": "Thumbnail Aero",
-        "Name[de]": "Miniaturansichten Aero",
-        "Name[fr]": "Vignettes Aero",
-        "Name[ja]": "サムネイル Aero",
-        "Name[ko]": "축소판 에어로",
         "Name[pl]": "Miniatury Aero",
-        "Name[zh_CN]": "缩略图 Aero",
-        "Name[zh_TW]": "縮圖 Aero"
+        "Name[de]": "Thumbnail Aero",
+        "Name[fr]": "Thumbnail Aero",
+        "Name[ja]": "Thumbnail Aero",
+        "Name[ko]": "Thumbnail Aero",
+        "Name[ru]": "Thumbnail Aero",
+        "Name[sr@latin]": "Thumbnail Aero",
+        "Name[zh_CN]": "Thumbnail Aero",
+        "Name[zh_TW]": "Thumbnail Aero",
+        "Description[sr@latin]": "Raspored preključivača prozora koji koristi mrežu malih sličica"
     },
     "X-Plasma-API": "declarativeappletscript"
 }
