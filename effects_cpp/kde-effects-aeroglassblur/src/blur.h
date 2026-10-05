@@ -9,6 +9,7 @@
 
 #include <effect/effect.h>
 #include <opengl/glutils.h>
+#include <scene/borderradius.h>
 #include <scene/item.h>
 
 #include <KConfigWatcher>
@@ -149,6 +150,7 @@ private:
     bool hasMaximizedWindowOnScreen(const EffectWindow *reference) const;
     bool hasMaximizedWindowOnCurrentActivity() const;
     qreal windowCornerRadius(const EffectWindow *w) const;
+    BorderRadius windowBorderRadius(const EffectWindow *w) const;
     void updateDockBlurRegions(const EffectWindow *changedWindow);
 
 private:

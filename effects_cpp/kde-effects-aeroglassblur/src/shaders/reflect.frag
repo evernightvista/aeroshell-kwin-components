@@ -14,18 +14,24 @@ uniform bool glowEnable;
 uniform float glowOpacity;
 uniform float windowScale;
 
-// SDF corner clipping
+// SDF corner clipping — per-corner radii (x=TL, y=TR, z=BL, w=BR)
 uniform vec2 u_blurRectSize;
-uniform float u_cornerRadius;
+uniform vec4 u_cornerRadius;
 
 in vec2 uv;
 in vec2 vertex;
 out vec4 fragColor;
 
-float sdRoundedBox(vec2 p, vec2 center, vec2 halfSize, float r)
+// Per-corner SDF: selects the appropriate corner radius based on fragment
+// position relative to the box centre.  Matches KWin's sdfRoundedBox().
+float sdRoundedBox(vec2 p, vec2 center, vec2 halfSize, vec4 r)
 {
-    vec2 q = abs(p - center) - halfSize + r;
-    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+    vec2 rp = p - center;
+    float radius = rp.x > 0.0
+        ? (rp.y < 0.0 ? r.y : r.w)   // right: top / bottom
+        : (rp.y < 0.0 ? r.x : r.z);  // left:  top / bottom
+    vec2 q = abs(rp) - halfSize + radius;
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
 }
 
 vec4 glowFragment()
@@ -90,10 +96,11 @@ void main(void)
     fragColor = result;
     fragColor *= colorMatrix;
 
-    // SDF corner clipping with anti-aliasing.  Ensures the reflection and
-    // glow texture do not bleed past the window's rounded visual corners.
+    // SDF corner clipping with anti-aliasing (per-corner).  Ensures the
+    // reflection and glow texture do not bleed past the window's rounded
+    // visual corners.
     float sdfAlpha = 1.0;
-    if (u_cornerRadius > 0.5) {
+    if (any(greaterThan(u_cornerRadius, vec4(0.5)))) {
         vec2  center   = u_blurRectSize * 0.5;
         vec2  halfSize = u_blurRectSize * 0.5;
         float d        = sdRoundedBox(vertex, center, halfSize, u_cornerRadius);

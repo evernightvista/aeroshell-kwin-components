@@ -26,6 +26,7 @@
 #include <wayland/surface.h>
 #include <wayland_server.h>
 #include <window.h>
+#include <scene/borderradius.h>
 
 #include <QGuiApplication>
 #include <QMatrix4x4>
@@ -888,42 +889,56 @@ bool BlurEffect::hasMaximizedWindowOnCurrentActivity() const
     return false;
 }
 
-qreal BlurEffect::windowCornerRadius(const EffectWindow *w) const
+BorderRadius BlurEffect::windowBorderRadius(const EffectWindow *w) const
 {
     if (!w || !w->window() || !w->screen()) {
-        return 0;
+        return BorderRadius();
     }
 
     // Docks (panels / taskbars) and desktop windows are typically flush
     // against the screen edge and should not be rounded.
     if (w->isDock() || w->isDesktop()) {
-        return 0;
+        return BorderRadius();
     }
 
     // Maximized windows fill the screen and have no visible corners.
     if (isMaximizedWindow(w)) {
+        return BorderRadius();
+    }
+
+    // Use the KWin Window::borderRadius() API (Plasma 6.7.91+).  This is
+    // the actual runtime value that the decoration (e.g. Klassy) has set
+    // via KDecoration3::Decoration::setBorderRadius(), so it is always in
+    // sync with the visual rendering — no config-file guessing.
+    //
+    // Klassy sets per-corner values, e.g.:
+    //   setBorderRadius(BorderRadius(topLeft, topRight, bottomRight, bottomLeft))
+    // where bottom corners may be 0 when the window is at a screen edge.
+    //
+    // For undecorated windows (no KDecoration), borderRadius() is null and
+    // we fall back to the Plasma default (12 px) so popups, the logout
+    // screen, and other Plasma windows get properly rounded blur regions.
+    const BorderRadius radius = w->window()->borderRadius();
+    if (!radius.isNull()) {
+        return radius;
+    }
+
+    // Undecorated Plasma windows (popups, logout screen, notifications,
+    // tooltips, etc.) have rounded visual corners but no KDecoration to
+    // report the radius.  Use the typical Plasma / Breeze default.
+    return BorderRadius(12.0);
+}
+
+qreal BlurEffect::windowCornerRadius(const EffectWindow *w) const
+{
+    const BorderRadius radius = windowBorderRadius(w);
+    if (radius.isNull()) {
         return 0;
     }
-
-    // Decorated windows: use the decoration's configured corner radius.
-    if (w->decorationHasAlpha()) {
-        qreal r = decorationCornerRadius(w);
-        if (r < 0) {
-            r = 4; // Klassy / KDecoration2 default fallback
-        }
-        return r;
-    }
-
-    // Undecorated windows without a KDecoration (Plasma popups, start menu,
-    // notification dialogs, tooltips, etc.) have rounded visual corners but
-    // the blur region is a plain rectangle.  Use a default radius that
-    // matches the typical Plasma / Breeze corner radius.
-    //
-    // This is the key fix: previously only the start menu (caption ==
-    // AS_MENUREP) received region-based rounding, which missed notification
-    // dialogs and other popups.  The SDF shader clip handles all of these
-    // uniformly with smooth anti-aliased edges.
-    return 12.0;
+    // Return the maximum corner radius for the single-radius region
+    // rounding path.  The SDF shader uses per-corner values independently.
+    return std::max({radius.topLeft(), radius.topRight(),
+                     radius.bottomRight(), radius.bottomLeft()});
 }
 
 void BlurEffect::updateDockBlurRegions(const EffectWindow *changedWindow)
@@ -1118,30 +1133,37 @@ RegionF BlurEffect::roundedCornerDecorationRegion(const EffectWindow *w, const R
         return baseRegion;
     }
 
-    // Determine the corner radius. decorationCornerRadius() returns -1 when no
-    // rounded decoration is detected, in which case keep the historical gentle
-    // fallback of 4px for decorations that report an alpha channel.
-    qreal cornerRadius = decorationCornerRadius(w);
-    if (cornerRadius < 0) {
-        cornerRadius = 4;
-    }
-    if (cornerRadius <= 0) {
+    // Use per-corner radii from Window::borderRadius() (set by Klassy) so
+    // the region rounding matches the SDF shader clip exactly.
+    const BorderRadius radius = windowBorderRadius(w);
+    if (radius.isNull()) {
         return baseRegion;
     }
 
     // decorRect and innerRect are in logical pixels (the same coordinate space
     // as EffectWindow::rect()), so the corner radius must also be in logical
-    // pixels.  Multiplying by screen()->scale() would express the radius in
-    // device pixels and over-round the region on HiDPI screens, excluding the
-    // title-bar corner pixels from the blur/colorize area.  The shader's SDF
-    // clip (basic.frag) handles the device-pixel rounding independently using
-    // windowCornerRadius() * viewport.scale() on the device-pixel
-    // scaledBackgroundRect, so the region rounding here must stay logical.
-    const qreal radius = cornerRadius;
+    // pixels.  The shader's SDF clip handles the device-pixel rounding
+    // independently via windowBorderRadius().scaled(viewport.scale()).
+    const qreal tl = radius.topLeft();
+    const qreal tr = radius.topRight();
+    const qreal br = radius.bottomRight();
+    const qreal bl = radius.bottomLeft();
 
-    // Create a rounded rect that covers the decoration area
+    // Build a per-corner rounded rect path covering the decoration area.
     QPainterPath path;
-    path.addRoundedRect(decorRect, radius, radius);
+    path.moveTo(decorRect.left(), decorRect.top() + tl);
+    if (tl > 0)
+        path.arcTo(QRectF(decorRect.left(), decorRect.top(), tl * 2, tl * 2), 180, -90);
+    path.lineTo(decorRect.right() - tr, decorRect.top());
+    if (tr > 0)
+        path.arcTo(QRectF(decorRect.right() - tr * 2, decorRect.top(), tr * 2, tr * 2), 90, -90);
+    path.lineTo(decorRect.right(), decorRect.bottom() - br);
+    if (br > 0)
+        path.arcTo(QRectF(decorRect.right() - br * 2, decorRect.bottom() - br * 2, br * 2, br * 2), 0, -90);
+    path.lineTo(decorRect.left() + bl, decorRect.bottom());
+    if (bl > 0)
+        path.arcTo(QRectF(decorRect.left(), decorRect.bottom() - bl * 2, bl * 2, bl * 2), 270, -90);
+    path.closeSubpath();
 
     // Subtract the inner area from the rounded rect to get only the decoration area
     RegionF roundedRegion(path.toFillPolygon().toPolygon());
@@ -1256,40 +1278,51 @@ qreal BlurEffect::decorationCornerRadius(const EffectWindow *w) const
 
 RegionF BlurEffect::roundedWindowRegion(const EffectWindow *w, const RegionF &baseRegion) const
 {
-    if (!w->decoration() || !w->window() || !w->screen()) {
+    if (!w->window() || !w->screen()) {
         return baseRegion;
     }
     if (baseRegion.isEmpty()) {
         return baseRegion;
     }
 
-    qreal cornerRadius = decorationCornerRadius(w);
-    // An explicitly square decoration (0) keeps its original region.
-    // An unknown radius (-1) means no rounded decoration was positively
-    // detected, but since this function is only called for decorations that
-    // report an alpha channel, most of them do round their corners (Klassy,
-    // Breeze, etc.).  Fall back to a conservative 4 px — matching Klassy's
-    // default — so we don't leave square residual corners (残角) that would
-    // show through the rounded decoration.
-    if (cornerRadius == 0) {
+    // Use per-corner radii from Window::borderRadius() (set by Klassy) so the
+    // region rounding matches the SDF shader clip exactly.  Both region and
+    // shader use logical-pixel radii here (the shader scales to device pixels
+    // via viewport.scale() independently).
+    const BorderRadius radius = windowBorderRadius(w);
+    if (radius.isNull()) {
         return baseRegion;
-    }
-    if (cornerRadius < 0) {
-        cornerRadius = 4;
     }
 
     // w->rect() is in logical pixels (frame-local), so the radius must be in
-    // logical pixels too.  See roundedCornerDecorationRegion() for the full
-    // explanation: multiplying by screen()->scale() over-rounds the region on
-    // HiDPI screens and clips the title-bar corners out of the blur area.
-    const qreal radius = cornerRadius;
+    // logical pixels too.  Multiplying by screen()->scale() would express the
+    // radius in device pixels and over-round the region on HiDPI screens.
+    const QRectF rect = w->rect();
 
-    // The composed blur region is in frame-local coordinates, exactly like
-    // EffectWindow::rect(). Intersecting it with a rounded rectangle removes the
-    // square corner fragments that force-blur would otherwise paint behind a
-    // rounded decoration (the "residual corner" / 残角 artifact with Klassy).
+    // Build a per-corner rounded rect path.  QPainterPath::addRoundedRect()
+    // only supports uniform radii, so we construct the path manually with
+    // arcTo() for each corner that has a non-zero radius.  This matches the
+    // per-corner SDF in the shader and correctly handles windows where only
+    // some corners are rounded (e.g. window at a screen edge).
     QPainterPath path;
-    path.addRoundedRect(w->rect(), radius, radius);
+    const qreal tl = radius.topLeft();
+    const qreal tr = radius.topRight();
+    const qreal br = radius.bottomRight();
+    const qreal bl = radius.bottomLeft();
+
+    path.moveTo(rect.left(), rect.top() + tl);
+    if (tl > 0)
+        path.arcTo(QRectF(rect.left(), rect.top(), tl * 2, tl * 2), 180, -90);
+    path.lineTo(rect.right() - tr, rect.top());
+    if (tr > 0)
+        path.arcTo(QRectF(rect.right() - tr * 2, rect.top(), tr * 2, tr * 2), 90, -90);
+    path.lineTo(rect.right(), rect.bottom() - br);
+    if (br > 0)
+        path.arcTo(QRectF(rect.right() - br * 2, rect.bottom() - br * 2, br * 2, br * 2), 0, -90);
+    path.lineTo(rect.left() + bl, rect.bottom());
+    if (bl > 0)
+        path.arcTo(QRectF(rect.left(), rect.bottom() - bl * 2, bl * 2, bl * 2), 270, -90);
+    path.closeSubpath();
 
     return baseRegion.intersected(RegionF(path.toFillPolygon().toPolygon()));
 }
@@ -1331,12 +1364,15 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
 
     }
 
-    // Round the whole composed blur region for rounded decorations. The
+    // Round the whole composed blur region for rounded windows. The
     // decoration-only rounding above only runs when the decoration reports its
     // own blur region; force-blurred windows get a rectangular frame/content
     // region, without this clip their square corners show through rounded
     // decorations such as Klassy (residual corner / 残角 artifact).
-    if (w->decorationHasAlpha()) {
+    // Apply to ALL windows that report a non-zero corner radius -- decorated
+    // AND undecorated (Plasma popups, logout screen, etc.) -- so the region
+    // always matches the SDF shader clip and no square corners leak through.
+    if (!windowBorderRadius(w).isNull()) {
         region = roundedWindowRegion(w, region);
     }
 
@@ -1950,14 +1986,17 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
         read->colorAttachment()->bind();
 
-        // SDF corner clipping: pass blur rect size, corner radius, and
+        // SDF corner clipping: pass blur rect size, per-corner radii, and
         // modulation (opacity²) to the shader.  The shader multiplies
         // fragColor by (modulation * sdfAlpha), producing premultiplied
         // alpha that works with GL_ONE / GL_ONE_MINUS_SRC_ALPHA blending.
-        const float deviceCornerRadius = float(windowCornerRadius(w) * viewport.scale());
+        // Per-corner radii come from Window::borderRadius() (set by Klassy)
+        // so the SDF clip exactly matches the decoration's visual rounding,
+        // including cases where some corners are square (e.g. edge windows).
+        const BorderRadius nativeRadius = windowBorderRadius(w).scaled(viewport.scale()).rounded();
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].blurRectSizeLocation,
             QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
-        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].cornerRadiusLocation, deviceCornerRadius);
+        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].cornerRadiusLocation, nativeRadius.toVector());
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].opacityModLocation, modulation);
 
         // Always enable premultiplied-alpha blending so the SDF can produce
@@ -2010,12 +2049,14 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             m_reflectPass.shader->setUniform(m_reflectPass.translateTextureLocation, m_translateTexture ? float(1.0) : float(0.0));
             m_reflectPass.shader->setUniform(m_reflectPass.colorMatrixLocation, colorMatrix);
 
-            // SDF corner clipping: same parameters as the aero pass so the
-            // reflection and glow texture also respect the rounded corners.
+            // SDF corner clipping: same per-corner parameters as the aero
+            // pass so the reflection and glow texture also respect the
+            // rounded corners.
+            const BorderRadius reflectRadius = windowBorderRadius(w).scaled(viewport.scale()).rounded();
             m_reflectPass.shader->setUniform(m_reflectPass.blurRectSizeLocation,
                 QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
             m_reflectPass.shader->setUniform(m_reflectPass.cornerRadiusLocation,
-                float(windowCornerRadius(w) * viewport.scale()));
+                reflectRadius.toVector());
 
             // Glow part
             m_reflectPass.shader->setUniform(m_reflectPass.glowEnableLocation, enableGlow);

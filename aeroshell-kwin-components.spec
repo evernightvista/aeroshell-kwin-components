@@ -97,6 +97,8 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Mon Oct 05 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-10
+- Fix Titlebar Corner BUG
 
 * Sun Oct 04 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-9
 - Add SMOD Snap
@@ -109,7 +111,7 @@ Development files for %{name}.
 - Mid-Autumn Festival Updates
 - Fix Title Bar Bug
 
-* Fri Sep 19 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-6
+* Sat Sep 19 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-6
 - Fix intermittent kwin_wayland SIGSEGV in aeroglassblur.so slotWindowDeleted
 - Replace raw QWindow* with QPointer<QWindow> in windowInternalWindows map
 - Prevent dangling pointer access when internal QWindow destroyed before windowDeleted signal
