@@ -11,12 +11,13 @@
 #include "blurconfig.h"
 
 #include <core/backendoutput.h>
+#include <core/pixelgrid.h>
 #include <core/rendertarget.h>
 #include <core/renderviewport.h>
 #include <effect/effecthandler.h>
 #include <opengl/glplatform.h>
-#include <opengl/eglcontext.h>
 #include <scene/backgroundeffectitem.h>
+#include <scene/borderradius.h>
 #include <scene/decorationitem.h>
 #include <scene/scene.h>
 #include <scene/surfaceitem.h>
@@ -26,25 +27,20 @@
 #include <wayland/surface.h>
 #include <wayland_server.h>
 #include <window.h>
-#include <scene/borderradius.h>
 
+#include <QDateTime>
 #include <QGuiApplication>
 #include <QMatrix4x4>
 #include <QScreen>
 #include <QTime>
 #include <QTimer>
 #include <QWindow>
-#include <QDateTime>
-#include <algorithm>
-#include <chrono>
 #include <cmath> // for ceil()
 #include <cstdlib>
-#include <cstring>
-#include <iterator>
+#include <utility>
 #include <QBuffer>
 #include <QPainterPath>
 #include <QFile>
-#include <utility>
 
 #include <KConfigGroup>
 #include <KSharedConfig>
@@ -59,15 +55,6 @@
 
 #define AS_MENUREP "aeroshell-menurepresentation"
 
-namespace
-{
-// A "kwinaero" shared memory segment only counts as a live KCM handover when
-// it was written within this window.  SysV shared memory survives process
-// exits, so without this check a segment left behind by a previous session
-// clobbers the kwinrc values at startup.
-constexpr qint64 s_sharedColorFreshnessMs = 30 * 1000;
-}
-
 Q_LOGGING_CATEGORY(KWIN_BLUR, "kwin_effect_aeroglassblur", QtWarningMsg)
 
 static void ensureResources()
@@ -78,28 +65,6 @@ static void ensureResources()
 
 namespace KWin
 {
-
-static bool currentContextUsesSoftwareRenderer()
-{
-    const EglContext *context = EglContext::currentContext();
-    return context && context->isSoftwareRenderer();
-}
-
-static bool currentContextUsesOpenGLES()
-{
-    // EglContext::isOpenGLES() is not exposed by all KWin 6.7.x development
-    // headers. GL_VERSION is part of the active OpenGL/GLES API and is
-    // available in both the accelerated and software compositor paths.
-    const auto *version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
-    return version && std::strncmp(version, "OpenGL ES", 9) == 0;
-}
-
-static bool currentContextIsVirtualMachine()
-{
-    const EglContext *context = EglContext::currentContext();
-    const auto *platform = context ? context->glPlatform() : nullptr;
-    return platform && platform->isVirtualMachine();
-}
 
 static const QByteArray s_blurAtomName = QByteArrayLiteral("_KDE_NET_WM_BLUR_BEHIND_REGION");
 
@@ -170,19 +135,6 @@ BlurEffect::BlurEffect()
     BlurConfig::instance(effects->config());
     ensureResources();
 
-    m_softwareRenderer = currentContextUsesSoftwareRenderer();
-    m_openGLESRenderer = currentContextUsesOpenGLES();
-    m_virtualMachine = currentContextIsVirtualMachine();
-    if (m_softwareRenderer) {
-        qCWarning(KWIN_BLUR) << "Software OpenGL renderer detected; using the compatibility render path";
-    }
-    if (m_openGLESRenderer) {
-        qCInfo(KWIN_BLUR) << "OpenGL ES renderer detected; using GLES-safe texture formats and sampling";
-    }
-    if (m_virtualMachine) {
-        qCWarning(KWIN_BLUR) << "Virtual machine renderer detected; using the conservative framebuffer path";
-    }
-
     m_downsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
                                                                                 QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                                 QStringLiteral(":/effects/aeroblur/shaders/downsample.frag"));
@@ -195,7 +147,7 @@ BlurEffect::BlurEffect()
         m_downsamplePass.halfpixelLocation = m_downsamplePass.shader->uniformLocation("halfpixel");
     }
 
-    m_upsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
+    m_upsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture | ShaderTrait::AdjustSaturation | ShaderTrait::TransformColorspace,
                                                                               QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                               QStringLiteral(":/effects/aeroblur/shaders/upsample.frag"));
     if (!m_upsamplePass.shader) {
@@ -205,11 +157,12 @@ BlurEffect::BlurEffect()
         m_upsamplePass.mvpMatrixLocation = m_upsamplePass.shader->uniformLocation("modelViewProjectionMatrix");
         m_upsamplePass.offsetLocation = m_upsamplePass.shader->uniformLocation("offset");
         m_upsamplePass.halfpixelLocation = m_upsamplePass.shader->uniformLocation("halfpixel");
+        m_upsamplePass.applyInverseColorTransformLocation = m_upsamplePass.shader->uniformLocation("applyInverseColorTransform");
     }
 
     for(int i = 0; i < 3; i++) {
         qCWarning(KWIN_BLUR) << "Loading shader " << aeroShaderLocations[i];
-        m_aeroPasses[i].shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
+        m_aeroPasses[i].shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture | ShaderTrait::AdjustSaturation | ShaderTrait::TransformColorspace,
                                                                                    QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                                    aeroShaderLocations[i]);
         if (!m_aeroPasses[i].shader) {
@@ -219,6 +172,7 @@ BlurEffect::BlurEffect()
             m_aeroPasses[i].mvpMatrixLocation            = m_aeroPasses[i].shader->uniformLocation("modelViewProjectionMatrix");
             m_aeroPasses[i].offsetLocation               = m_aeroPasses[i].shader->uniformLocation("offset");
             m_aeroPasses[i].halfpixelLocation            = m_aeroPasses[i].shader->uniformLocation("halfpixel");
+            m_aeroPasses[i].transformedLocation          = m_aeroPasses[i].shader->uniformLocation("transformed");
             m_aeroPasses[i].colorMatrixLocation          = m_aeroPasses[i].shader->uniformLocation("colorMatrix");
             m_aeroPasses[i].aeroColorRLocation           = m_aeroPasses[i].shader->uniformLocation("aeroColorR");
             m_aeroPasses[i].aeroColorGLocation           = m_aeroPasses[i].shader->uniformLocation("aeroColorG");
@@ -227,15 +181,11 @@ BlurEffect::BlurEffect()
             m_aeroPasses[i].aeroColorBalanceLocation     = m_aeroPasses[i].shader->uniformLocation("aeroColorBalance");
             m_aeroPasses[i].aeroAfterglowBalanceLocation = m_aeroPasses[i].shader->uniformLocation("aeroAfterglowBalance");
             m_aeroPasses[i].aeroBlurBalanceLocation      = m_aeroPasses[i].shader->uniformLocation("aeroBlurBalance");
-            // SDF corner clipping uniforms
-            m_aeroPasses[i].blurRectSizeLocation          = m_aeroPasses[i].shader->uniformLocation("u_blurRectSize");
-            m_aeroPasses[i].cornerRadiusLocation          = m_aeroPasses[i].shader->uniformLocation("u_cornerRadius");
-            m_aeroPasses[i].opacityModLocation             = m_aeroPasses[i].shader->uniformLocation("u_opacity");
         }
 
     }
 
-    m_reflectPass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
+    m_reflectPass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture | ShaderTrait::AdjustSaturation | ShaderTrait::TransformColorspace,
                                                                              QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                              QStringLiteral(":/effects/aeroblur/shaders/reflect.frag"));
 
@@ -252,41 +202,33 @@ BlurEffect::BlurEffect()
         m_reflectPass.translateTextureLocation = m_reflectPass.shader->uniformLocation("translate");
         m_reflectPass.colorMatrixLocation = m_reflectPass.shader->uniformLocation("colorMatrix");
         m_reflectPass.reflectTextureLocation = m_reflectPass.shader->uniformLocation("texUnit");
+        m_reflectPass.viewportLocation = m_reflectPass.shader->uniformLocation("viewport");
         // Glow
         m_reflectPass.textureSizeLocation = m_reflectPass.shader->uniformLocation("textureSize");
+        m_reflectPass.useWaylandLocation = m_reflectPass.shader->uniformLocation("useWayland");
         m_reflectPass.glowTextureLocation = m_reflectPass.shader->uniformLocation("glowTexture");
         m_reflectPass.glowEnableLocation = m_reflectPass.shader->uniformLocation("glowEnable");
         m_reflectPass.glowOpacityLocation = m_reflectPass.shader->uniformLocation("glowOpacity");
-        // SDF corner clipping uniforms
-        m_reflectPass.blurRectSizeLocation = m_reflectPass.shader->uniformLocation("u_blurRectSize");
-        m_reflectPass.cornerRadiusLocation = m_reflectPass.shader->uniformLocation("u_cornerRadius");
+
     }
 
     m_reflectPass.sideGlowTexture = GLTexture::upload(QPixmap(QStringLiteral(":/effects/aeroblur/framecornereffect.png")));
-    if (m_reflectPass.sideGlowTexture) {
-        m_reflectPass.sideGlowTexture->setFilter(GL_LINEAR);
-        m_reflectPass.sideGlowTexture->setWrapMode(GL_CLAMP_TO_EDGE);
-    } else {
-        qCWarning(KWIN_BLUR) << "Failed to load side glow texture";
-    }
+    m_reflectPass.sideGlowTexture->setFilter(GL_LINEAR_MIPMAP_LINEAR);
+    m_reflectPass.sideGlowTexture->setWrapMode(GL_CLAMP_TO_EDGE);
     m_reflectPass.sideGlowTexture_unfocus = GLTexture::upload(QPixmap(QStringLiteral(":/effects/aeroblur/framecornereffect-unfocus.png")));
-    if (m_reflectPass.sideGlowTexture_unfocus) {
-        m_reflectPass.sideGlowTexture_unfocus->setFilter(GL_LINEAR);
-        m_reflectPass.sideGlowTexture_unfocus->setWrapMode(GL_CLAMP_TO_EDGE);
-    } else {
-        qCWarning(KWIN_BLUR) << "Failed to load side glow texture (unfocus)";
-    }
+    m_reflectPass.sideGlowTexture_unfocus->setFilter(GL_LINEAR_MIPMAP_LINEAR);
+    m_reflectPass.sideGlowTexture_unfocus->setWrapMode(GL_CLAMP_TO_EDGE);
 
     initBlurStrengthValues();
 
     // Setup Plasma accent color monitoring BEFORE reconfigure() is called,
-    // because reconfigure() may start/stop the timer
+    // because reconfigure() may start/stop the timer.
     m_plasmaAccentColorTimer = new QTimer(this);
     m_plasmaAccentColorTimer->setInterval(2000); // Check every 2 seconds
     connect(m_plasmaAccentColorTimer, &QTimer::timeout, this, &BlurEffect::slotPlasmaAccentColorChanged);
 
     // React to accent color changes in kdeglobals without needing the effect
-    // settings to be open.  Plasma rewrites several groups per accent change
+    // settings to be open. Plasma rewrites several groups per accent change
     // (General/AccentColor, the Colors:* scheme groups, ...), so debounce the
     // re-read slightly to avoid flashing a half-updated tint.
     m_accentConfigWatcher = KConfigWatcher::create(KSharedConfig::openConfig(QStringLiteral("kdeglobals")));
@@ -299,13 +241,6 @@ BlurEffect::BlurEffect()
             });
         }
     });
-
-    // Mark the effect as valid BEFORE calling reconfigure() so that the
-    // m_valid guard in reconfigure() does not skip the initial configuration.
-    // If any shader failed to load above, the constructor already returned
-    // early and m_valid stays false, which correctly blocks later D-Bus
-    // triggered reconfigure calls from touching the uninitialized state.
-    m_valid = true;
 
     reconfigure(ReconfigureAll);
 
@@ -321,22 +256,24 @@ BlurEffect::BlurEffect()
         slotWindowAdded(window);
     }
 
-    // reconfigure() runs before existing windows are registered above.  Its
+    // reconfigure() runs before existing windows are registered above. Its
     // repaint request can therefore be consumed before Plasma's panel and
-    // menu have an AeroGlass blur item.  Request one more full repaint after
+    // menu have an AeroGlass blur item. Request one more full repaint after
     // initialization so those already-open windows receive the configured
-    // color immediately instead of only after opening the effect settings.
+    // color immediately.
     effects->addRepaintFull();
 
     // Early-login safety net: kdeglobals may not be final yet while the
     // session is still starting up, and reading it too early can come back
-    // with no usable accent.  Retry following a few times until it has
+    // with no usable accent. Retry following a few times until it has
     // actually applied once; every retry is a no-op once it succeeded.
     for (const int delayMs : {3000, 8000, 15000, 25000, 40000}) {
         QTimer::singleShot(delayMs, this, [this]() {
             slotStartupAccentHeal();
         });
     }
+
+    m_valid = true;
 }
 
 BlurEffect::~BlurEffect()
@@ -402,92 +339,50 @@ void BlurEffect::initBlurStrengthValues()
     }
 }
 
-void BlurEffect::configureAeroColors()
+bool BlurEffect::readMemory(bool *skipFunc)
 {
-    float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
+    *skipFunc = false;
 
-    fH = (float)m_aeroHue;
-    fS = ((float)m_aeroSaturation) / 100.0f;
-    fV = ((float)m_aeroBrightness) / 100.0f;
-
-    HSVtoRGB(fR, fG, fB, fH, fS, fV);
-
-    int primaryBalance, secondaryBalance, blurBalance;
-    getColorBalances(m_aeroIntensity, primaryBalance, secondaryBalance, blurBalance);
-
-    m_aeroPrimaryBalance   = primaryBalance;
-    m_aeroSecondaryBalance = secondaryBalance;
-    m_aeroBlurBalance      = blurBalance;
-    m_aeroPrimaryBalanceInactive = 0.4f * m_aeroPrimaryBalance;
-    m_aeroBlurBalanceInactive = 0.4f * m_aeroBlurBalance + 60;
-
-    m_aeroColorR = fR;
-    m_aeroColorG = fG;
-    m_aeroColorB = fB;
-    m_aeroColorA = (m_aeroIntensity - 26) / 191.0f;
-
-    getMaximizedColorization(m_aeroIntensity, m_aeroColorR, m_aeroColorG, m_aeroColorB, m_aeroColorROpaque, m_aeroColorGOpaque, m_aeroColorBOpaque);
-    if(m_aeroIntensity < 26) {
-        m_aeroColorA = m_aeroIntensity / 255.0f;
-    }
-}
-
-void BlurEffect::applyPlasmaAccentColor(const QColor &accentColor)
-{
-    if (!accentColor.isValid() || accentColor.alpha() == 0) {
-        return;
-    }
-
-    float fR = accentColor.redF();
-    float fG = accentColor.greenF();
-    float fB = accentColor.blueF();
-    float fH = 0;
-    float fS = 0;
-    float fV = 0;
-    RGBtoHSV(fR, fG, fB, fH, fS, fV);
-
-    // The UI/shader conversion uses the half-open hue range [0, 360).
-    // Rounding a color close to red can otherwise produce 360, which the
-    // conversion helper treats as an invalid sector and turns black.
-    m_aeroHue = qBound(0, qRound(fH), 359);
-    m_aeroSaturation = qRound(fS * 100.0f);
-    m_aeroBrightness = qRound(fV * 100.0f);
-    configureAeroColors();
-}
-
-bool BlurEffect::readMemory(SharedColorState &state)
-{
-    // KWin only consumes the handover. Read-only attachment avoids requiring
-    // write access to the KCM-owned segment and makes the normal no-preview
-    // case explicit: NotFound means use kwinrc values.
-    if (!m_sharedMemory.attach(QSharedMemory::ReadOnly))
+    if(!m_sharedMemory.attach())
     {
-        if (m_sharedMemory.error() != QSharedMemory::NotFound) {
-            qCWarning(KWIN_BLUR) << "Couldn't access shared memory" << m_sharedMemory.nativeKey() << m_sharedMemory.error();
-        }
-        return false;
+        qCWarning(KWIN_BLUR) << "Couldn't access shared memory! " << m_sharedMemory.nativeKey() << " " << m_sharedMemory.error();
+        if(m_sharedMemory.error())
+            return false;
     }
     QBuffer buffer;
     QDataStream in(&buffer);
 
-    if (!m_sharedMemory.lock()) {
-        qCWarning(KWIN_BLUR) << "Couldn't lock shared memory" << m_sharedMemory.nativeKey() << m_sharedMemory.error();
-        m_sharedMemory.detach();
-        return false;
-    }
+    int ah, as, ab, ai;
+    bool transparencyEnabled;
+    bool skip;
+    qint64 writeTime = 0;
+    m_sharedMemory.lock();
     buffer.setData((char*)m_sharedMemory.constData(), m_sharedMemory.size());
     buffer.open(QBuffer::ReadOnly);
-    in >> state.hue >> state.saturation >> state.brightness >> state.intensity
-       >> state.transparencyEnabled >> state.skip >> state.timestampMs;
+    in >> ah >> as >> ab >> ai >> transparencyEnabled >> skip >> writeTime;
+    const bool streamOk = in.status() == QDataStream::Ok;
     m_sharedMemory.unlock();
     m_sharedMemory.detach();
 
-    // Segments written by an old KCM carry no timestamp and must never
-    // override the kwinrc values; ditto for anything older than the
-    // freshness window, which is a leftover from a previous session
-    // rather than a live handover.
-    state.fresh = state.timestampMs > 0
-        && qAbs(QDateTime::currentMSecsSinceEpoch() - state.timestampMs) <= s_sharedColorFreshnessMs;
+    // This segment is a live-preview handover from the KCM (see
+    // BlurEffectConfig::writeToMemory): the KCM writes the current slider
+    // values, a timestamp and then asks KWin to reconfigure. KWin must only
+    // honor it while it is fresh. A segment left behind by an earlier session
+    // (or by a KCM that was closed without cleaning up) is not a preview and
+    // must not override the kwinrc values, otherwise the effect starts up with
+    // a stale tint and only recovers once the settings are opened again.
+    constexpr qint64 freshnessWindowMs = 5000;
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (!streamOk || writeTime <= 0 || now >= writeTime + freshnessWindowMs) {
+        return false;
+    }
+
+    m_aeroIntensity  = ai;
+    m_aeroHue        = ah;
+    m_aeroSaturation = as;
+    m_aeroBrightness = ab;
+    m_transparencyEnabled = transparencyEnabled;
+    *skipFunc = skip;
     return true;
 }
 
@@ -495,74 +390,37 @@ void BlurEffect::reconfigure(ReconfigureFlags flags)
 {
     Q_UNUSED(flags)
 
-    // If the effect failed to initialise (shaders not loaded, etc.) the
-    // blur strength tables are empty and the OpenGL resources were never
-    // created.  The KCM triggers reconfigure() over D-Bus regardless of
-    // whether the effect is valid, so bail out early to avoid crashing on
-    // empty blurStrengthValues / null shader pointers.
-    if (!m_valid) {
-        return;
-    }
-
-    // Read the config before deciding whether the shared memory handover may
-    // be used: with FollowPlasmaAccentColor enabled the color is always the
-    // live Plasma accent, so a segment written by the KCM - especially a
-    // leftover preview (skip=true) that also carries its own intensity and
-    // transparency values - must never override the accent-following colors.
     BlurConfig::self()->read();
     m_followPlasmaAccentColor = BlurConfig::followPlasmaAccentColor();
 
-    // The KCM hands colors over through the "kwinaero" shared memory segment
-    // and then triggers reconfigure() over D-Bus.  Only honor the segment when
-    // a KCM wrote it recently (see readMemory()): at session start the segment
-    // is a leftover from a previous login, and the kwinrc values are
-    // authoritative instead.  Accent following disables the handover entirely
-    // (the accent is re-read live on every reconfigure / heal tick).
-    SharedColorState shared;
-    const bool useSharedColor = !m_followPlasmaAccentColor && readMemory(shared) && shared.fresh;
+    bool skip = false;
+    bool readColor = readMemory(&skip) && m_firstTimeConfig;
+    if(skip && m_firstTimeConfig)
+    {
+        configureAeroColors();
+        for (auto &[window, data] : m_windows) {
+            data.blurItem->setPixelsToExpandRepaintsBelowOpaqueRegions(m_expandSize);
+        }
+        updateAccentFromPlasma();
+        effects->addRepaintFull();
+        return;
+    }
 
-    const bool previewColors = useSharedColor && shared.skip;
-    if (previewColors) {
-        // Live preview in the KCM color mixer: the preview owns the HSV
-        // values until the dialog is applied or canceled. The remaining
-        // rendering settings still need to go through the normal path below;
-        // returning here left reflection and GLES-sensitive state uninitialized.
-        m_aeroIntensity   = shared.intensity;
-        m_aeroHue         = shared.hue;
-        m_aeroSaturation  = shared.saturation;
-        m_aeroBrightness  = shared.brightness;
-        m_transparencyEnabled = shared.transparencyEnabled;
-    } else if (useSharedColor) {
-        m_aeroIntensity   = shared.intensity;
-        m_aeroHue         = shared.hue;
-        m_aeroSaturation  = shared.saturation;
-        m_aeroBrightness  = shared.brightness;
-        m_transparencyEnabled = shared.transparencyEnabled;
-    } else {
+    if(!readColor)
+    {
         m_aeroIntensity  = BlurConfig::aeroIntensity();
         m_aeroHue        = BlurConfig::aeroHue();
         m_aeroSaturation = BlurConfig::aeroSaturation();
         m_aeroBrightness = BlurConfig::aeroBrightness();
         m_transparencyEnabled = BlurConfig::enableTransparency();
+
+        configureAeroColors();
     }
-    configureAeroColors();
     m_reflectionIntensity = BlurConfig::reflectionIntensity();
 
     int blurStrength = BlurConfig::blurStrength()-1;
-    // Defensive: if blurStrengthValues is somehow empty or the config
-    // returned an out-of-range value, clamp to avoid an out-of-bounds read.
-    if (blurStrengthValues.isEmpty() || blurStrength < 0 || blurStrength >= blurStrengthValues.size()) {
-        qCWarning(KWIN_BLUR) << "Invalid blur strength value" << blurStrength
-                             << "valid range: 0.." << blurStrengthValues.size() - 1;
-        return;
-    }
     m_iterationCount = blurStrengthValues[blurStrength].iteration;
     m_offset = blurStrengthValues[blurStrength].offset;
-    // Guard against invalid iteration count to prevent out-of-bounds on blurOffsets
-    if (m_iterationCount < 1 || m_iterationCount > (size_t)blurOffsets.size()) {
-        qCWarning(KWIN_BLUR) << "Invalid iteration count" << m_iterationCount;
-        return;
-    }
     m_expandSize = blurOffsets[m_iterationCount - 1].expandSize;
     m_blurMatching = BlurConfig::blurMatching();
     m_blurNonMatching = BlurConfig::blurNonMatching();
@@ -583,30 +441,18 @@ void BlurEffect::reconfigure(ReconfigureFlags flags)
     m_basicColorization = BlurConfig::basicColorization();
     m_maximizeColorization = BlurConfig::maximizeColorization();
     m_enableCornerGlow = BlurConfig::enableCornerGlow();
-    m_followPlasmaAccentColor = BlurConfig::followPlasmaAccentColor();
     m_translateTexture = BlurConfig::translateTexture();
     m_texturePath = BlurConfig::textureLocation();
+    ensureReflectTexture();
 
-    // Perform OpenGL operations only when the context can be made current.
-    // During construction the context is already current, so this is a no-op
-    // and ensureReflectTexture() runs normally.  The KCM triggers reconfigure()
-    // via D-Bus; if compositing has been suspended or the context is not
-    // available, makeOpenGLContextCurrent() returns false and we skip texture
-    // uploads to avoid dereferencing a null EglContext and crashing
-    // kwin_wayland.
-    if (effects->makeOpenGLContextCurrent()) {
-        ensureReflectTexture();
+    m_firstTimeConfig = true;
+    for (auto &[window, data] : m_windows) {
+        data.blurItem->setPixelsToExpandRepaintsBelowOpaqueRegions(m_expandSize);
     }
 
-    // Handle Plasma accent color following
+    // Follow the live Plasma accent color, overriding whatever the config or a
+    // KCM handover may have set for the colorization tint.
     updateAccentFromPlasma();
-
-    // Re-calculate blur regions for all existing windows since matching rules
-    // or other configuration may have changed
-    const auto stackingOrder = effects->stackingOrder();
-    for (EffectWindow *window : stackingOrder) {
-        updateBlurRegion(window);
-    }
 
     // Update all windows for the blur to take effect
     effects->addRepaintFull();
@@ -631,9 +477,6 @@ bool BlurEffect::isFirefoxWindowValid(KWin::EffectWindow *w)
 
 RegionF BlurEffect::applyBlurRegion(KWin::EffectWindow *w, bool useFrame)
 {
-    if (!w->window() || !w->screen()) {
-        return RegionF();
-    }
     auto maximizeState = w->window()->maximizeMode();
     const auto scale = w->screen()->scale();
     const int radius = maximizeState == MaximizeMode::MaximizeFull ? 0 : m_firefoxCornerRadius * scale;
@@ -663,27 +506,6 @@ RegionF BlurEffect::applyBlurRegion(KWin::EffectWindow *w, bool useFrame)
 
 void BlurEffect::updateBlurRegion(EffectWindow *w)
 {
-    if (!w) {
-        return;
-    }
-
-    // Windows without a windowItem cannot have a BackgroundEffectItem, which
-    // is required for the blur to schedule repaints correctly. Skip them
-    // entirely to avoid null-pointer hazards and stale m_windows entries.
-    if (!w->windowItem()) {
-        if (auto it = m_windows.find(w); it != m_windows.end()) {
-            // Ensure the OpenGL context is current so that GLTexture and
-            // GLFramebuffer destructors (invoked by erase) can release GPU
-            // resources. If the context cannot be made current (e.g. during
-            // a D-Bus triggered reconfigure while compositing is suspended),
-            // the destructors log a warning and skip GL cleanup rather than
-            // crashing.
-            effects->makeOpenGLContextCurrent();
-            m_windows.erase(it);
-        }
-        return;
-    }
-
     std::optional<RegionF> content;
     std::optional<RegionF> frame;
 
@@ -713,22 +535,7 @@ void BlurEffect::updateBlurRegion(EffectWindow *w)
             }
 
             if (isX11WithCSD || w->decoration()) {
-                QRectF frameRect = w->frameGeometry().translated(-w->x(), -w->y());
-
-                // A maximized window can still report a transparent bottom
-                // decoration/shadow in its frame geometry.  Blur must not
-                // paint that strip above a bottom Plasma panel: it appears
-                // as an extra line attached to the taskbar.  Keep the title
-                // bar and side borders, but remove only the bottom frame
-                // area that is outside the client contents.
-                if (isMaximizedWindow(w)) {
-                    const QRectF contentsRect = w->contentsRect();
-                    if (!contentsRect.isEmpty() && contentsRect.bottom() < frameRect.bottom()) {
-                        frameRect.setBottom(qMax(frameRect.top(), contentsRect.bottom()));
-                    }
-                }
-
-                frame = RegionF(frameRect);
+                frame = w->frameGeometry().translated(-w->x(), -w->y());
             }
         }
 
@@ -779,14 +586,18 @@ void BlurEffect::slotWindowAdded(EffectWindow *w)
         }
     });
 
-    if (auto internal = w->internalWindow()) {
-        internal->installEventFilter(this);
-        windowInternalWindows[w] = internal;
+    auto maximizeState = w->window()->maximizeMode();
+    if (maximizeState == MaximizeMode::MaximizeFull && !w->isMinimized()) {
+        m_maximizedWindows.push_front(w);
     }
 
-    windowMaximizedStateChangedConnections[w] = connect(w, &EffectWindow::windowMaximizedStateChanged, this, &BlurEffect::slotWindowMaximizedStateChanged);
-    windowMinimizedChangedConnections[w] = connect(w, &EffectWindow::minimizedChanged, this, &BlurEffect::slotMinimizedChanged);
-    windowDecorationChangedConnections[w] = connect(w, &EffectWindow::windowDecorationChanged, this, [this, w]() {
+    if (auto internal = w->internalWindow()) {
+        internal->installEventFilter(this);
+    }
+
+    connect(w, &EffectWindow::windowMaximizedStateChanged, this, &BlurEffect::slotWindowMaximizedStateChanged);
+    connect(w, &EffectWindow::minimizedChanged, this, &BlurEffect::slotMinimizedChanged);
+    connect(w, &EffectWindow::windowDecorationChanged, this, [this, w]() {
         setupDecorationConnections(w);
         updateBlurRegion(w);
     });
@@ -806,154 +617,40 @@ void BlurEffect::slotWindowDeleted(EffectWindow *w)
         windowBlurChangedConnections.erase(it);
     }
 
+    if (auto it = std::find(m_maximizedWindows.begin(), m_maximizedWindows.end(), w); it != m_maximizedWindows.end()) {
+        m_maximizedWindows.erase(it);
+    }
     if (auto it = windowExpandedGeometryChangedConnections.find(w); it != windowExpandedGeometryChangedConnections.end()) {
         disconnect(*it);
         windowExpandedGeometryChangedConnections.erase(it);
-    }
-
-    if (auto it = windowMaximizedStateChangedConnections.find(w); it != windowMaximizedStateChangedConnections.end()) {
-        disconnect(*it);
-        windowMaximizedStateChangedConnections.erase(it);
-    }
-
-    if (auto it = windowMinimizedChangedConnections.find(w); it != windowMinimizedChangedConnections.end()) {
-        disconnect(*it);
-        windowMinimizedChangedConnections.erase(it);
-    }
-
-    if (auto it = windowDecorationChangedConnections.find(w); it != windowDecorationChangedConnections.end()) {
-        disconnect(*it);
-        windowDecorationChangedConnections.erase(it);
-    }
-
-    if (auto it = decorationBlurRegionChangedConnections.find(w); it != decorationBlurRegionChangedConnections.end()) {
-        disconnect(*it);
-        decorationBlurRegionChangedConnections.erase(it);
-    }
-
-    if (auto it = windowInternalWindows.find(w); it != windowInternalWindows.end()) {
-        if (it.value()) {
-            it.value()->removeEventFilter(this);
-        }
-        windowInternalWindows.erase(it);
     }
 }
 
 void BlurEffect::slotWindowMaximizedStateChanged(KWin::EffectWindow *w, bool horizontal, bool vertical)
 {
-    Q_UNUSED(horizontal)
-    Q_UNUSED(vertical)
-    updateDockBlurRegions(w);
+    if (horizontal && vertical && !w->isMinimized()) {
+        m_maximizedWindows.push_front(w);
+    } else {
+        auto it = std::find(m_maximizedWindows.begin(), m_maximizedWindows.end(), w);
+        if (it != m_maximizedWindows.end()) {
+            m_maximizedWindows.erase(it);
+        }
+    }
 }
 
 void BlurEffect::slotMinimizedChanged(KWin::EffectWindow *w)
 {
-    updateDockBlurRegions(w);
-}
-
-bool BlurEffect::isMaximizedWindow(const EffectWindow *w) const
-{
-    if (!w || !w->window() || w->isMinimized() || w->isDock() || w->isDesktop()) {
-        return false;
-    }
-
-    return w->window()->maximizeMode() == MaximizeMode::MaximizeFull;
-}
-
-bool BlurEffect::hasMaximizedWindowOnScreen(const EffectWindow *reference) const
-{
-    if (!reference || !reference->screen()) {
-        return false;
-    }
-
-    for (const EffectWindow *window : effects->stackingOrder()) {
-        if (window->screen() != reference->screen() || !isMaximizedWindow(window)) {
-            continue;
+    if (w->isMinimized()) {
+        auto it = std::find(m_maximizedWindows.begin(), m_maximizedWindows.end(), w);
+        if (it != m_maximizedWindows.end()) {
+            m_maximizedWindows.erase(it);
         }
-        if (window->isOnCurrentDesktop() && window->isOnCurrentActivity()) {
-            return true;
+    } else {
+        auto maximizeState = w->window()->maximizeMode();
+        if (maximizeState == MaximizeMode::MaximizeFull) {
+            m_maximizedWindows.push_front(w);
         }
     }
-
-    return false;
-}
-
-bool BlurEffect::hasMaximizedWindowOnCurrentActivity() const
-{
-    for (const EffectWindow *window : effects->stackingOrder()) {
-        if (isMaximizedWindow(window) && window->isOnCurrentDesktop() && window->isOnCurrentActivity()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-BorderRadius BlurEffect::windowBorderRadius(const EffectWindow *w) const
-{
-    if (!w || !w->window() || !w->screen()) {
-        return BorderRadius();
-    }
-
-    // Docks (panels / taskbars) and desktop windows are typically flush
-    // against the screen edge and should not be rounded.
-    if (w->isDock() || w->isDesktop()) {
-        return BorderRadius();
-    }
-
-    // Maximized windows fill the screen and have no visible corners.
-    if (isMaximizedWindow(w)) {
-        return BorderRadius();
-    }
-
-    // Use the KWin Window::borderRadius() API (Plasma 6.7.91+).  This is
-    // the actual runtime value that the decoration (e.g. Klassy) has set
-    // via KDecoration3::Decoration::setBorderRadius(), so it is always in
-    // sync with the visual rendering — no config-file guessing.
-    //
-    // Klassy sets per-corner values, e.g.:
-    //   setBorderRadius(BorderRadius(topLeft, topRight, bottomRight, bottomLeft))
-    // where bottom corners may be 0 when the window is at a screen edge.
-    //
-    // For undecorated windows (no KDecoration), borderRadius() is null and
-    // we fall back to the Plasma default (12 px) so popups, the logout
-    // screen, and other Plasma windows get properly rounded blur regions.
-    const BorderRadius radius = w->window()->borderRadius();
-    if (!radius.isNull()) {
-        return radius;
-    }
-
-    // Undecorated Plasma windows (popups, logout screen, notifications,
-    // tooltips, etc.) have rounded visual corners but no KDecoration to
-    // report the radius.  Use the typical Plasma / Breeze default.
-    return BorderRadius(12.0);
-}
-
-qreal BlurEffect::windowCornerRadius(const EffectWindow *w) const
-{
-    const BorderRadius radius = windowBorderRadius(w);
-    if (radius.isNull()) {
-        return 0;
-    }
-    // Return the maximum corner radius for the single-radius region
-    // rounding path.  The SDF shader uses per-corner values independently.
-    return std::max({radius.topLeft(), radius.topRight(),
-                     radius.bottomRight(), radius.bottomLeft()});
-}
-
-void BlurEffect::updateDockBlurRegions(const EffectWindow *changedWindow)
-{
-    if (!changedWindow || !changedWindow->screen()) {
-        return;
-    }
-
-    for (EffectWindow *window : effects->stackingOrder()) {
-        if (window->isDock() && window->screen() == changedWindow->screen()) {
-            updateBlurRegion(window);
-        }
-    }
-
-    effects->addRepaintFull();
 }
 
 void BlurEffect::slotViewRemoved(KWin::RenderView *view)
@@ -968,17 +665,11 @@ void BlurEffect::slotViewRemoved(KWin::RenderView *view)
 
 void BlurEffect::setupDecorationConnections(EffectWindow *w)
 {
-    // Disconnect old decoration connection first to prevent dangling pointers
-    if (auto it = decorationBlurRegionChangedConnections.find(w); it != decorationBlurRegionChangedConnections.end()) {
-        disconnect(*it);
-        decorationBlurRegionChangedConnections.erase(it);
-    }
-
     if (!w->decoration()) {
         return;
     }
 
-    decorationBlurRegionChangedConnections[w] = connect(w->decoration(), &KDecoration3::Decoration::blurRegionChanged, this, [this, w]() {
+    connect(w->decoration(), &KDecoration3::Decoration::blurRegionChanged, this, [this, w]() {
         updateBlurRegion(w);
     });
 }
@@ -1012,319 +703,61 @@ bool BlurEffect::decorationSupportsBlurBehind(const EffectWindow *w) const
     return w->decoration() && !w->decoration()->blurRegion().isNull();
 }
 
-QRectF BlurEffect::decorationInnerRect(const EffectWindow *w) const
-{
-    // EffectWindow::decorationInnerRect() is rect() - frameMargins(), which is
-    // effectively the window's client area. The decoration's border*() values
-    // are NOT equivalent to frameMargins() and can become inconsistent while a
-    // window is being dragged, resized, or its decoration theme is updating.
-    // When that happens the title bar loses its blur background because the
-    // computed decoration region shrinks to nothing. Use contentsRect() --
-    // which is derived from the window's actual client geometry -- as the
-    // reliable base instead.
-    const QRectF rect = w->contentsRect();
-
-    const auto *deco = w->decoration();
-    if (!deco) {
-        return rect;
-    }
-
-    const QRectF decorRect = deco->rect();
-    if (decorRect.isEmpty()) {
-        return rect;
-    }
-
-    // The decoration's glass may overlap the client area by a few pixels,
-    // which leaves a 1-3px dark seam right below the title bar when the blur
-    // is clipped strictly to contentsRect(). Reconstruct the decoration's
-    // inner rect from its border values so the blur can extend across that
-    // seam -- but only trust the result when it agrees with contentsRect().
-    // While dragging, resizing, or hovering a window the decoration's
-    // border*() values can lag behind and produce a decorInner that covers
-    // the whole title bar (or the whole decoration). Uniting contentsRect
-    // with such a decorInner would wipe out the title bar blur region, so in
-    // that case contentsRect() is the safe fallback.
-    const qreal left = deco->borderLeft();
-    const qreal top = deco->borderTop();
-    const qreal right = deco->borderRight();
-    const qreal bottom = deco->borderBottom();
-
-    if (left < 0 || top < 0 || right < 0 || bottom < 0) {
-        return rect;
-    }
-    if (left + right >= decorRect.width() || top + bottom >= decorRect.height()) {
-        return rect;
-    }
-
-    const QRectF decorInner = decorRect.adjusted(left, top, -right, -bottom);
-
-    // A genuine client/decoration overlap is at most a few pixels. If
-    // decorInner differs from contentsRect() by more than this on any edge,
-    // the borders are in flux and we must not use decorInner.
-    constexpr qreal kMaxSeam = 8.0;
-    if (std::abs(decorInner.left()   - rect.left())   <= kMaxSeam &&
-        std::abs(decorInner.top()    - rect.top())    <= kMaxSeam &&
-        std::abs(decorInner.right()  - rect.right())  <= kMaxSeam &&
-        std::abs(decorInner.bottom() - rect.bottom()) <= kMaxSeam) {
-        return decorInner;
-    }
-
-    return rect;
-}
-
 RegionF BlurEffect::decorationBlurRegion(const EffectWindow *w) const
 {
     if (!decorationSupportsBlurBehind(w)) {
         return {};
     }
 
-    // Use the full decoration frame (decoration rect minus inner client rect)
-    // rather than intersecting with decoration->blurRegion().  Some decorations
-    // (e.g. Klassy) report a blur region that does not cover the rounded title
-    // bar corners, which leaves the top-left/top-right corners uncolored.
-    // The Aero Glass effect needs to colorize the entire title bar including
-    // its rounded corners; the decoration paints its own controls (buttons,
-    // title text) on top of the blurred/colorized background.
-    RegionF decorationRegion = RegionF(w->decoration()->rect()) - decorationInnerRect(w);
-
-    // Apply rounded corners to fix residual corner artifacts with decorations
-    // like klassy that have rounded corners but return a rectangular blur region
-    if (w->decorationHasAlpha()) {
-        decorationRegion = roundedCornerDecorationRegion(w, decorationRegion);
-    }
-
-    return decorationRegion;
+    RegionF decorationRegion = RegionF(w->decoration()->rect()) - w->contentsRect();
+    //! we return only blurred regions that belong to decoration region
+    return decorationRegion.intersected(RegionF(w->decoration()->blurRegion()));
 }
 
-RegionF BlurEffect::roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const
+// Clip a blur region to the rounded corners the window actually has.
+//
+// The blur background item is attached to the window item and is therefore a
+// sibling of the item that KWin rounds (WindowItem::m_windowContainer), so it
+// is not affected by the rounded-corner clip the decoration requests through
+// Window::setBorderRadius(). Without this the blurred/colorized background
+// would paint into the square corner area behind a rounded decoration - most
+// noticeable with decorations that use a large corner radius such as Klassy -
+// and show up as a "residual corner" (残角) around the title bar.
+static RegionF roundBlurRegion(const RegionF &region, const RectF &bounds, const BorderRadius &radius)
 {
-    if (!w->decoration() || !w->window() || !w->screen()) {
-        return baseRegion;
+    if (region.isEmpty() || radius.isNull()) {
+        return region;
     }
 
-    // If the window is fully maximized, corners should be square, no rounding needed
-    auto maximizeState = w->window()->maximizeMode();
-    if (maximizeState == MaximizeMode::MaximizeFull) {
-        return baseRegion;
-    }
+    const qreal topLeft = radius.topLeft();
+    const qreal topRight = radius.topRight();
+    const qreal bottomRight = radius.bottomRight();
+    const qreal bottomLeft = radius.bottomLeft();
 
-    const QRectF decorRect = w->decoration()->rect();
-    // Use decorationInnerRect() (not contentsRect()) for consistency with
-    // decorationBlurRegion(), which subtracts the same inner rect from the
-    // decoration rect. Using contentsRect() here would mismatch the blur
-    // region and leave square-corner fragments along the seam.
-    const QRectF innerRect = decorationInnerRect(w);
-
-    // If the base region is empty, nothing to round
-    if (baseRegion.isEmpty()) {
-        return baseRegion;
-    }
-
-    // Use bounding rect area as approximation instead of iterating rects
-    QRectF baseBounding = baseRegion.boundingRect();
-    qreal baseArea = baseBounding.width() * baseBounding.height();
-    qreal decorArea = decorRect.width() * decorRect.height();
-    qreal innerArea = innerRect.width() * innerRect.height();
-    qreal expectedDecorArea = decorArea - innerArea;
-
-    // If the base region doesn't cover most of the decoration area,
-    // it already has a custom shape, don't modify it
-    if (expectedDecorArea <= 0 || baseArea / expectedDecorArea < 0.9) {
-        return baseRegion;
-    }
-
-    // Use per-corner radii from Window::borderRadius() (set by Klassy) so
-    // the region rounding matches the SDF shader clip exactly.
-    const BorderRadius radius = windowBorderRadius(w);
-    if (radius.isNull()) {
-        return baseRegion;
-    }
-
-    // decorRect and innerRect are in logical pixels (the same coordinate space
-    // as EffectWindow::rect()), so the corner radius must also be in logical
-    // pixels.  The shader's SDF clip handles the device-pixel rounding
-    // independently via windowBorderRadius().scaled(viewport.scale()).
-    const qreal tl = radius.topLeft();
-    const qreal tr = radius.topRight();
-    const qreal br = radius.bottomRight();
-    const qreal bl = radius.bottomLeft();
-
-    // Build a per-corner rounded rect path covering the decoration area.
+    // BorderRadius supports one radius per corner, so build the outline of the
+    // rounded rectangle manually instead of using QPainterPath::addRoundedRect()
+    // which only handles a single uniform radius.
     QPainterPath path;
-    path.moveTo(decorRect.left(), decorRect.top() + tl);
-    if (tl > 0)
-        path.arcTo(QRectF(decorRect.left(), decorRect.top(), tl * 2, tl * 2), 180, -90);
-    path.lineTo(decorRect.right() - tr, decorRect.top());
-    if (tr > 0)
-        path.arcTo(QRectF(decorRect.right() - tr * 2, decorRect.top(), tr * 2, tr * 2), 90, -90);
-    path.lineTo(decorRect.right(), decorRect.bottom() - br);
-    if (br > 0)
-        path.arcTo(QRectF(decorRect.right() - br * 2, decorRect.bottom() - br * 2, br * 2, br * 2), 0, -90);
-    path.lineTo(decorRect.left() + bl, decorRect.bottom());
-    if (bl > 0)
-        path.arcTo(QRectF(decorRect.left(), decorRect.bottom() - bl * 2, bl * 2, bl * 2), 270, -90);
+    path.moveTo(bounds.left() + topLeft, bounds.top());
+    path.lineTo(bounds.right() - topRight, bounds.top());
+    if (topRight > 0) {
+        path.arcTo(QRectF(bounds.right() - 2 * topRight, bounds.top(), 2 * topRight, 2 * topRight), 90, -90);
+    }
+    path.lineTo(bounds.right(), bounds.bottom() - bottomRight);
+    if (bottomRight > 0) {
+        path.arcTo(QRectF(bounds.right() - 2 * bottomRight, bounds.bottom() - 2 * bottomRight, 2 * bottomRight, 2 * bottomRight), 0, -90);
+    }
+    path.lineTo(bounds.left() + bottomLeft, bounds.bottom());
+    if (bottomLeft > 0) {
+        path.arcTo(QRectF(bounds.left(), bounds.bottom() - 2 * bottomLeft, 2 * bottomLeft, 2 * bottomLeft), 270, -90);
+    }
+    path.lineTo(bounds.left(), bounds.top() + topLeft);
+    if (topLeft > 0) {
+        path.arcTo(QRectF(bounds.left(), bounds.top(), 2 * topLeft, 2 * topLeft), 180, -90);
+    }
     path.closeSubpath();
 
-    // Subtract the inner area from the rounded rect to get only the decoration area
-    RegionF roundedRegion(path.toFillPolygon().toPolygon());
-    roundedRegion -= RegionF(innerRect);
-
-    // Intersect with the original base region to preserve any existing shape
-    roundedRegion = roundedRegion.intersected(baseRegion);
-
-    return roundedRegion;
-}
-
-qreal BlurEffect::decorationCornerRadius(const EffectWindow *w) const
-{
-    if (!w->decoration() || !w->window() || !w->screen()) {
-        return -1;
-    }
-
-    // A fully maximized window always has square corners.
-    if (w->window()->maximizeMode() == MaximizeMode::MaximizeFull) {
-        return 0;
-    }
-
-    // Helper: read a double from a KConfigGroup, returning -1 on failure.
-    auto readRadius = [](const KSharedConfigPtr &config, const QString &fileName) -> qreal {
-        // KSharedConfig caches config objects globally.  When the user changes
-        // Klassy settings at runtime (e.g. adjusts the corner-radius slider in
-        // klassy-settings), the on-disk file is rewritten but the shared,
-        // cached KSharedConfig instance may still hold the old (or empty)
-        // state.  Calling reparseConfiguration() forces a re-read from disk
-        // so that we always see the latest value.
-        config->reparseConfiguration();
-
-        // [Windeco] group – Klassy ≥ 5.0 stores the double
-        // "WindowCornerRadius" here (range 0-24, default 4).
-        KConfigGroup windecoGroup(config, QStringLiteral("Windeco"));
-        qreal r = windecoGroup.readEntry(QStringLiteral("WindowCornerRadius"), -1.0);
-        if (r >= 0) {
-            return r;
-        }
-
-        // Legacy integer key still in [Windeco] (Klassy 4.x)
-        const int legacyWindeco = windecoGroup.readEntry(QStringLiteral("CornerRadius"), -1);
-        if (legacyWindeco >= 0) {
-            return static_cast<qreal>(legacyWindeco);
-        }
-
-        // [General] group – very old Klassy versions
-        KConfigGroup generalGroup(config, QStringLiteral("General"));
-        r = generalGroup.readEntry(QStringLiteral("CornerRadius"), -1.0);
-        if (r >= 0) {
-            return r;
-        }
-
-        // If the [Windeco] group exists at all, Klassy is installed and
-        // active even if WindowCornerRadius is at its default.  Return the
-        // Klassy default (4 px) so we don't leave square residual corners.
-        if (windecoGroup.exists()) {
-            return 4.0;
-        }
-
-        return -1.0;
-    };
-
-    // Klassy moved its config from ~/.config/klassyrc to
-    // ~/.config/klassy/klassyrc (Klassy 5.0, Jan 2024).  Try the new path
-    // first, then fall back to the old path for users who haven't migrated.
-    qreal radius = readRadius(KSharedConfig::openConfig(QStringLiteral("klassy/klassyrc")),
-                              QStringLiteral("klassy/klassyrc"));
-    if (radius < 0) {
-        radius = readRadius(KSharedConfig::openConfig(QStringLiteral("klassyrc")),
-                             QStringLiteral("klassyrc"));
-    }
-    if (radius >= 0) {
-        return radius;
-    }
-
-    // No explicit radius stored and no [Windeco] group found.  As a last
-    // resort, check whether Klassy is registered as the active window
-    // decoration in kwinrc / kdeglobals.  If it is, Klassy still rounds
-    // corners with its default radius (4 px), so return that rather than
-    // leaving square residual corners.
-    KSharedConfigPtr kwinConfig = KSharedConfig::openConfig(QStringLiteral("kwinrc"));
-    kwinConfig->reparseConfiguration();
-    // Plasma 6 → [org.kde.kdecoration3]; older → [org.kde.kdecoration2]
-    const QString deco3Lib = KConfigGroup(kwinConfig, QStringLiteral("org.kde.kdecoration3"))
-                                 .readEntry("library", QString());
-    const QString deco3Theme = KConfigGroup(kwinConfig, QStringLiteral("org.kde.kdecoration3"))
-                                    .readEntry("theme", QString());
-    const QString deco2Lib = KConfigGroup(kwinConfig, QStringLiteral("org.kde.kdecoration2"))
-                                 .readEntry("library", QString());
-    const QString deco2Theme = KConfigGroup(kwinConfig, QStringLiteral("org.kde.kdecoration2"))
-                                    .readEntry("theme", QString());
-    // Some distributions store the widget style in kdeglobals instead.
-    KSharedConfigPtr kdeglobalsConfig = KSharedConfig::openConfig(QStringLiteral("kdeglobals"));
-    kdeglobalsConfig->reparseConfiguration();
-    const QString decoKde = KConfigGroup(kdeglobalsConfig, QStringLiteral("KDE"))
-                                .readEntry("widgetStyle", QString());
-
-    // Klassy's library name is "org.kde.klassy" and its default theme is
-    // "klassy" / "Klassy".
-    auto isKlassy = [](const QString &s) {
-        return s.contains(QStringLiteral("klassy"), Qt::CaseInsensitive);
-    };
-    if (isKlassy(deco3Lib) || isKlassy(deco3Theme) ||
-        isKlassy(deco2Lib) || isKlassy(deco2Theme) ||
-        isKlassy(decoKde)) {
-        return 4.0;
-    }
-
-    return -1;
-}
-
-RegionF BlurEffect::roundedWindowRegion(const EffectWindow *w, const RegionF &baseRegion) const
-{
-    if (!w->window() || !w->screen()) {
-        return baseRegion;
-    }
-    if (baseRegion.isEmpty()) {
-        return baseRegion;
-    }
-
-    // Use per-corner radii from Window::borderRadius() (set by Klassy) so the
-    // region rounding matches the SDF shader clip exactly.  Both region and
-    // shader use logical-pixel radii here (the shader scales to device pixels
-    // via viewport.scale() independently).
-    const BorderRadius radius = windowBorderRadius(w);
-    if (radius.isNull()) {
-        return baseRegion;
-    }
-
-    // w->rect() is in logical pixels (frame-local), so the radius must be in
-    // logical pixels too.  Multiplying by screen()->scale() would express the
-    // radius in device pixels and over-round the region on HiDPI screens.
-    const QRectF rect = w->rect();
-
-    // Build a per-corner rounded rect path.  QPainterPath::addRoundedRect()
-    // only supports uniform radii, so we construct the path manually with
-    // arcTo() for each corner that has a non-zero radius.  This matches the
-    // per-corner SDF in the shader and correctly handles windows where only
-    // some corners are rounded (e.g. window at a screen edge).
-    QPainterPath path;
-    const qreal tl = radius.topLeft();
-    const qreal tr = radius.topRight();
-    const qreal br = radius.bottomRight();
-    const qreal bl = radius.bottomLeft();
-
-    path.moveTo(rect.left(), rect.top() + tl);
-    if (tl > 0)
-        path.arcTo(QRectF(rect.left(), rect.top(), tl * 2, tl * 2), 180, -90);
-    path.lineTo(rect.right() - tr, rect.top());
-    if (tr > 0)
-        path.arcTo(QRectF(rect.right() - tr * 2, rect.top(), tr * 2, tr * 2), 90, -90);
-    path.lineTo(rect.right(), rect.bottom() - br);
-    if (br > 0)
-        path.arcTo(QRectF(rect.right() - br * 2, rect.bottom() - br * 2, br * 2, br * 2), 0, -90);
-    path.lineTo(rect.left() + bl, rect.bottom());
-    if (bl > 0)
-        path.arcTo(QRectF(rect.left(), rect.bottom() - bl * 2, bl * 2, bl * 2), 270, -90);
-    path.closeSubpath();
-
-    return baseRegion.intersected(RegionF(path.toFillPolygon().toPolygon()));
+    return region.intersected(RegionF(path.toFillPolygon().toPolygon()));
 }
 
 RegionF BlurEffect::blurRegion(EffectWindow *w) const
@@ -1340,16 +773,13 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
                 // for the whole window.
                 region = w->rect();
                 if (w->decorationHasAlpha() && decorationSupportsBlurBehind(w)) {
-                    region &= decorationInnerRect(w);
+                    region &= w->contentsRect();
                 }
             } else {
                 if (frame.has_value()) {
                     region = frame.value();
                 }
-                // content() is client-surface relative: translate by the client
-                // origin, but clip to the decoration's transparent inner rect so
-                // the glass covers the seam where the decoration overlaps the client.
-                region += content->translated(w->contentsRect().topLeft()) & decorationInnerRect(w);
+                region += content->translated(w->contentsRect().topLeft()) & w->contentsRect(); // LIKELY_BUG
             }
         } else if (frame.has_value()) {
             region = frame.value();
@@ -1359,50 +789,19 @@ RegionF BlurEffect::blurRegion(EffectWindow *w) const
     if (w->decorationHasAlpha() && decorationSupportsBlurBehind(w)) {
         // If the client hasn't specified a blur region, we'll only enable
         // the effect behind the decoration.
-        region &= decorationInnerRect(w);
+        region &= w->contentsRect();
         region |= decorationBlurRegion(w);
 
     }
 
-    // Round the whole composed blur region for rounded windows. The
-    // decoration-only rounding above only runs when the decoration reports its
-    // own blur region; force-blurred windows get a rectangular frame/content
-    // region, without this clip their square corners show through rounded
-    // decorations such as Klassy (residual corner / 残角 artifact).
-    // Apply to ALL windows that report a non-zero corner radius -- decorated
-    // AND undecorated (Plasma popups, logout screen, etc.) -- so the region
-    // always matches the SDF shader clip and no square corners leak through.
-    if (!windowBorderRadius(w).isNull()) {
-        region = roundedWindowRegion(w, region);
-    }
-
-    // When a maximized window is on the same screen, remove the rounded ends
-    // of a dock/panel's blur shape. Plasma keeps the panel window larger than
-    // its visible background, so extending the blur region across the dock's
-    // perpendicular axis makes the panel appear attached to the screen edge.
-    if (w->isDock() && hasMaximizedWindowOnScreen(w) && !region.isEmpty()) {
-        const QRectF dockRect = w->rect();
-        QRectF attachedRect = region.boundingRect();
-        const QRectF frameGeo = w->frameGeometry();
-        const QRect screenGeo = w->screen()->geometry();
-
-        const qreal distances[] = {
-            qAbs(frameGeo.top() - screenGeo.top()),
-            qAbs(frameGeo.bottom() - screenGeo.bottom()),
-            qAbs(frameGeo.left() - screenGeo.left()),
-            qAbs(frameGeo.right() - screenGeo.right()),
-        };
-        const auto nearestEdge = std::min_element(std::begin(distances), std::end(distances));
-        const int edge = static_cast<int>(nearestEdge - std::begin(distances));
-
-        if (edge == 0 || edge == 1) {
-            attachedRect.setLeft(dockRect.left());
-            attachedRect.setRight(dockRect.right());
-        } else {
-            attachedRect.setTop(dockRect.top());
-            attachedRect.setBottom(dockRect.bottom());
+    // Clip the composed region to the window's actual rounded corners so the
+    // blurred/colorized background cannot leak into the square corner area of
+    // the decoration (residual corner artifact with Klassy and similar styles).
+    if (w->window()) {
+        const BorderRadius radius = w->window()->borderRadius();
+        if (!radius.isNull()) {
+            region = roundBlurRegion(region, w->rect(), radius);
         }
-        region = RegionF(attachedRect.intersected(dockRect));
     }
 
     return region;
@@ -1412,21 +811,14 @@ void BlurEffect::prePaintScreen(ScreenPrePaintData &data)
 {
     m_currentView = data.view;
 
-    // Bail out early if the effect was not fully initialised.
-    if (!m_valid) {
-        effects->prePaintScreen(data);
-        return;
-    }
+    // We can avoid checking for every window by evaluating the condition here
+    auto maximizedWindowsOnCurrentActivity = [&]() -> bool {
+        return std::find_if(m_maximizedWindows.begin(), m_maximizedWindows.end(),
+                            [](const EffectWindow *a) { return a->isOnCurrentDesktop() && a->isOnCurrentActivity(); }) != m_maximizedWindows.end();
+    };
 
-    // Maximize and desktop/activity changes are not guaranteed to arrive in
-    // the same order as a panel geometry update. Refresh dock blur bounds from
-    // the current window state before painting so panels cannot retain the
-    // previous floating shape.
-    const auto stackingOrder = effects->stackingOrder();
-    for (EffectWindow *window : stackingOrder) {
-        if (window->isDock()) {
-            updateBlurRegion(window);
-        }
+    if (m_maximizeColorization) {
+        m_maximizedWindowsInCurrentActivity = maximizedWindowsOnCurrentActivity();
     }
 
     effects->prePaintScreen(data);
@@ -1451,7 +843,7 @@ bool BlurEffect::shouldBlur(const EffectWindow *w, int mask, const WindowPaintDa
         return false;
     }
 
-    if (w->isOutline() || w->isDesktop() || (!w->isManaged() && !(windowClass == "plasmashell" || windowClass == "kwin_x11" || windowClass == "kwin_wayland"))) {
+    if (w->isOutline() || w->isDesktop() || (!w->isManaged() && !(windowClass == "plasmashell" || windowClass == "kwin_wayland"))) {
         return false;
     }
 
@@ -1461,9 +853,6 @@ bool BlurEffect::shouldBlur(const EffectWindow *w, int mask, const WindowPaintDa
 bool BlurEffect::shouldForceBlur(const EffectWindow *w) const
 {
     if ((!m_blurDocks && w->isDock()) || (!m_blurMenus && (w->isMenu() || w->isDropdownMenu() || w->isPopupMenu()))) {
-        return false;
-    }
-    if (!w->window()) {
         return false;
     }
     // For some reason, the Alt+Tab window on Wayland is made up of two windows, one of which is completely empty
@@ -1488,9 +877,6 @@ bool BlurEffect::shouldForceBlur(const EffectWindow *w) const
 
 bool BlurEffect::shouldNotBlur(const EffectWindow *w) const
 {
-    if (!w->window()) {
-        return false;
-    }
     const QString resourceName = w->window()->resourceName();
     const QString resourceClass = w->window()->resourceClass();
 
@@ -1509,12 +895,12 @@ bool BlurEffect::shouldNotBlur(const EffectWindow *w) const
 
 bool BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
-    if (m_valid) {
-        blur(renderTarget, viewport, w, mask, deviceRegion, data);
-    }
+    blur(renderTarget, viewport, w, mask, deviceRegion, data);
 
     // Draw the window over the blurred area
-    return effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+    (void)effects->drawWindow(renderTarget, viewport, w, mask, deviceRegion, data);
+
+    return true;
 }
 
 void BlurEffect::ensureReflectTexture() {
@@ -1523,52 +909,16 @@ void BlurEffect::ensureReflectTexture() {
     }
 
     QImage textureImage(m_texturePath);
-    if (textureImage.isNull()) {
-        qCWarning(KWIN_BLUR) << "Failed to load reflection texture from" << m_texturePath;
-        return;
-    }
 
     m_reflectPass.reflectTexture = GLTexture::upload(textureImage);
-    if (!m_reflectPass.reflectTexture) {
-        qCWarning(KWIN_BLUR) << "Failed to upload reflection texture to GPU";
-        return;
-    }
-    // Use GL_LINEAR instead of GL_LINEAR_MIPMAP_LINEAR.  GLTexture::upload()
-    // creates a texture with mipLevels=1, so m_canUseMipmaps is false and
-    // GL_LINEAR_MIPMAP_LINEAR silently falls back to GL_LINEAR on bind.
-    // However, on llvmpipe (software renderer) the mipmap-linear filter state
-    // can still trigger crashes in the driver's texture setup path even when
-    // the fallback is applied.  Using GL_LINEAR directly avoids this.
-    m_reflectPass.reflectTexture->setFilter(GL_LINEAR);
-    // Keep the NPOT texture GLES- and software-renderer-safe. The shader
-    // clamps its coordinates, so repeating is neither needed nor desirable.
-    m_reflectPass.reflectTexture->setWrapMode(GL_CLAMP_TO_EDGE);
+    m_reflectPass.reflectTexture->setFilter(GL_LINEAR_MIPMAP_LINEAR);
+    m_reflectPass.reflectTexture->setWrapMode(GL_REPEAT);
 }
 
 void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data)
 {
-    EglContext *context = EglContext::currentContext();
-    if (!context) {
-        qCWarning(KWIN_BLUR) << "No current EGL context for blur rendering";
-        return;
-    }
-
     auto it = m_windows.find(w);
     if (it == m_windows.end()) {
-        return;
-    }
-
-    // Defensive: a window without a windowItem should never have been added
-    // to m_windows. Bail out if it somehow ended up here.
-    if (!w->windowItem()) {
-        return;
-    }
-
-    // Bail out if the effect was not fully initialised (e.g. shader
-    // compilation failed).  Without valid shaders the downsample, upsample
-    // and colorization passes would dereference null GLShader pointers and
-    // crash kwin_wayland.
-    if (!m_valid || !m_downsamplePass.shader || !m_upsamplePass.shader) {
         return;
     }
 
@@ -1583,7 +933,7 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
     // HDR brightness must be handled by color management in the compositor.
     double hdr_brightness_correction = 1.0;
-    if (w->screen() && w->screen()->backendOutput() && w->screen()->backendOutput()->highDynamicRange()) {
+    if (w->screen()->backendOutput()->highDynamicRange()) {
         hdr_brightness_correction = w->screen()->backendOutput()->brightnessSetting();
     }
 
@@ -1593,6 +943,9 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
     if (!winData.isNull()) {
         transformedMatrix = winData.value<QMatrix4x4>();
     }
+
+    const bool scaled = !qFuzzyCompare(data.xScale(), 1.0) && !qFuzzyCompare(data.yScale(), 1.0);
+    bool regularTransformation = winData.isNull() && (mask & Effect::PAINT_WINDOW_TRANSFORMED);
 
     // Compute the effective blur shape. Note that if the window is transformed, so will be the blur shape.
     RegionF blurShape = blurRegion(w);
@@ -1605,18 +958,20 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
     blurShape.translate(w->pos());
 
-    const Rect backgroundRect = blurShape.boundingRect().rounded();
-    if (backgroundRect.isEmpty()) {
-        return;
+    Rect backgroundRect = blurShape.boundingRect().rounded();
+    /*
+     * The new way of downsampling works reliably for textures with
+     * even dimensions, so we shrink the bounding rectangle by 1
+     * on odd-sized regions. This helps prevent the blur shaking as
+     * the user resizes windows.
+     */
+    if (backgroundRect.width() % 2 != 0) {
+        backgroundRect.setWidth(backgroundRect.width() - 1);
     }
-    // scaledBackgroundRect is in render-target pixels, while
-    // deviceBackgroundRect is in the viewport's device coordinate space.
-    // Keep these mappings separate: mapToRenderTarget() also applies the
-    // output transform and must not be used for clipping deviceRegion.
+    if (backgroundRect.height() % 2 != 0) {
+        backgroundRect.setHeight(backgroundRect.height() - 1);
+    }
     const Rect scaledBackgroundRect = backgroundRect.scaled(viewport.scale()).rounded();
-    if (scaledBackgroundRect.isEmpty()) {
-        return;
-    }
     const Rect deviceBackgroundRect = viewport.mapToDeviceCoordinates(backgroundRect).rounded();
 
     auto opacity = w->opacity() * data.opacity();
@@ -1649,28 +1004,12 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
     // Maybe reallocate offscreen render targets. Keep in mind that the first one contains
     // original background behind the window, it's not blurred.
-    // Keep GLES, software, and virtual-machine paths on the conservative
-    // RGBA8 target. Virtual GPUs can expose the host's HDR or packed format
-    // while their FBO/blit implementation only reliably handles RGBA8.
-    const bool compatibilityRenderer = m_softwareRenderer
-        || m_openGLESRenderer
-        || m_virtualMachine
-        || currentContextUsesSoftwareRenderer()
-        || currentContextUsesOpenGLES()
-        || currentContextIsVirtualMachine();
     GLenum textureFormat = GL_RGBA8;
-    if (!compatibilityRenderer && renderTarget.texture()) {
+    if (renderTarget.texture()) {
         textureFormat = renderTarget.texture()->internalFormat();
     }
 
-    // Guard against accessing textures[0] when the vector is empty (e.g. first
-    // render for this view, or after a view change).  The short-circuit || means
-    // textures[0] is only dereferenced when framebuffers already has the right count,
-    // which implies textures was populated in the same allocation pass.
-    if (renderInfo.framebuffers.size() != (m_iterationCount + 1)
-        || renderInfo.textures.empty()
-        || (renderInfo.textures[0]->size() != backgroundRect.size())
-        || (renderInfo.textures[0]->internalFormat() != textureFormat)) {
+    if (renderInfo.framebuffers.size() != (m_iterationCount + 1) || renderInfo.textures[0]->size() != backgroundRect.size() || renderInfo.textures[0]->internalFormat() != textureFormat) {
         renderInfo.framebuffers.clear();
         renderInfo.textures.clear();
 
@@ -1690,18 +1029,15 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
                 qCWarning(KWIN_BLUR) << "Failed to create an offscreen framebuffer";
                 return;
             }
-            context->pushFramebuffer(framebuffer.get());
+            EglContext::currentContext()->pushFramebuffer(framebuffer.get());
             glClear(GL_COLOR_BUFFER_BIT);
-            context->popFramebuffer();
+            EglContext::currentContext()->popFramebuffer();
             renderInfo.textures.push_back(std::move(texture));
             renderInfo.framebuffers.push_back(std::move(framebuffer));
         }
     }
 
     // Fetch the pixels behind the shape that is going to be blurred.
-    // Use the viewport's coordinate mapping like the reference KWin blur
-    // effect does, instead of manually scaling each rect. This correctly
-    // handles Region::infinite() and transform-aware coordinate conversion.
     const Region dirtyRegion = viewport.mapFromDeviceCoordinatesContained(deviceRegion) & backgroundRect;
     for (const Rect &dirtyRect : dirtyRegion.rects()) {
         renderInfo.framebuffers[0]->blitFromRenderTarget(renderTarget, viewport, dirtyRect, dirtyRect.translated(-backgroundRect.topLeft()));
@@ -1803,7 +1139,6 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             };
         }
 
-        bool skipTransformedBlur = false;
         if (!winData.isNull()) // If the window sends transformation data, apply it to the painted geometry, skipping the offscreen geometry
         {
             const qreal transformScale = viewport.scale() > 0.0 ? viewport.scale() : 1.0;
@@ -1816,13 +1151,7 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
                 // Calculate new uv coordinates so the sampling doesn't get distorted
                 float u = transformed.x() / scaledBackgroundRect.width();
                 float v = 1.0f - transformed.y() / scaledBackgroundRect.height();
-                if (v < -1 && transformed.y() > scaledBackgroundRect.height()) {
-                    // Do not return while the streaming VBO is mapped. GLES
-                    // drivers are particularly sensitive to an unfinished
-                    // map/unmap pair and the next effect can inherit it.
-                    skipTransformedBlur = true;
-                    break;
-                }
+                if(v < -1 && transformed.y() > scaledBackgroundRect.height()) return; // Prevents warped animations from running for too long, making them imperceptible
                 // Update vertices and uv coordinates
                 map[ind].position.setX(transformed.x());
                 map[ind].position.setY(transformed.y());
@@ -1832,9 +1161,6 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         }
 
         vbo->unmap();
-        if (skipTransformedBlur) {
-            return;
-        }
     } else {
         qCWarning(KWIN_BLUR) << "Failed to map vertex buffer";
         return;
@@ -1862,7 +1188,7 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
             read->colorAttachment()->bind();
 
-            context->pushFramebuffer(draw.get());
+            GLFramebuffer::pushFramebuffer(draw.get());
             vbo->draw(GL_TRIANGLES, 0, 6);
         }
 
@@ -1880,12 +1206,19 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         m_upsamplePass.shader->setUniform(m_upsamplePass.offsetLocation, float(m_offset / 2.5f));
 
         for (size_t i = renderInfo.framebuffers.size() - 1; i > 1; --i) {
-            context->popFramebuffer();
+            GLFramebuffer::popFramebuffer();
             const auto &read = renderInfo.framebuffers[i];
 
             const QVector2D halfpixel(0.5 / (double)read->colorAttachment()->width(),
                                       0.5 / (double)read->colorAttachment()->height());
             m_upsamplePass.shader->setUniform(m_upsamplePass.halfpixelLocation, halfpixel);
+
+            const auto toXYZ = renderTarget.colorDescription()->containerColorimetry().toXYZ();
+            m_upsamplePass.shader->setUniform(GLShader::FloatUniform::Saturation, data.saturation());
+            m_upsamplePass.shader->setUniform(GLShader::Vec3Uniform::PrimaryBrightness, QVector3D(toXYZ(1, 0), toXYZ(1, 1), toXYZ(1, 2)));
+            // At the last upsample pass, We need to reverse the brightness and colorspace trnsformation performed by the base shader in order to prevent unintended darkening of the overall blur
+            m_upsamplePass.shader->setColorspaceUniforms(renderTarget.colorDescription(), ColorDescription::sRGB, RenderingIntent::AbsoluteColorimetricNoAdaptation);
+            m_upsamplePass.shader->setUniform(m_upsamplePass.applyInverseColorTransformLocation, i == 2);
 
             read->colorAttachment()->bind();
 
@@ -1894,6 +1227,8 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
         ShaderManager::instance()->popShader();
     }
+
+
 
     const float modulation = opacity * opacity;
     const QMatrix4x4 colorMatrix = colorTransformMatrix(data.saturation() * hdr_brightness_correction, data.brightness());
@@ -1904,6 +1239,11 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         /*********************
          * COLORIZATION PASS *
          *********************/
+
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         float basicAlpha = m_aeroIntensity / 255.0f;
 
         float pb = m_aeroPrimaryBalance;
@@ -1940,15 +1280,8 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             selectedPass = AeroPasses::BASIC;
         }
 
-        if (!useTransparency) {
+        if (!useTransparency || (regularTransformation && !opaqueMaximize)) {
             selectedPass = AeroPasses::OPAQUE;
-        }
-
-        // Bail out if the selected aero shader failed to load during
-        // construction; calling pushShader(nullptr) would crash.
-        if (!m_aeroPasses[selectedPass].shader) {
-            qCWarning(KWIN_BLUR) << "Aero shader not available for pass" << selectedPass;
-            return;
         }
 
         ShaderManager::instance()->pushShader(m_aeroPasses[selectedPass].shader.get());
@@ -1956,23 +1289,20 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         QMatrix4x4 projectionMatrix = viewport.projectionMatrix();
         projectionMatrix.translate(scaledBackgroundRect.x(), scaledBackgroundRect.y());
 
-        context->popFramebuffer();
-        // Guard: after the upsample loop, framebuffers must have at least 2
-        // entries for index [1] to be valid. If allocation partially failed or
-        // the iteration count is unexpectedly low, bail out instead of
-        // dereferencing an out-of-bounds element.
-        if (renderInfo.framebuffers.size() < 2) {
-            ShaderManager::instance()->popShader();
-            qCWarning(KWIN_BLUR) << "Insufficient framebuffers for colorization pass";
-            return;
-        }
+        GLFramebuffer::popFramebuffer();
         const auto &read = renderInfo.framebuffers[1];
 
+
+        const auto toXYZ = renderTarget.colorDescription()->containerColorimetry().toXYZ();
+        m_aeroPasses[selectedPass].shader->setUniform(GLShader::FloatUniform::Saturation, data.saturation());
+        m_aeroPasses[selectedPass].shader->setUniform(GLShader::Vec3Uniform::PrimaryBrightness, QVector3D(toXYZ(1, 0), toXYZ(1, 1), toXYZ(1, 2)));
+        m_aeroPasses[selectedPass].shader->setColorspaceUniforms(ColorDescription::sRGB, renderTarget.colorDescription(), RenderingIntent::Perceptual);
 
         const QVector2D halfpixel(0.5 / (double)read->colorAttachment()->width(),
                                   0.5 / (double)read->colorAttachment()->height());
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].mvpMatrixLocation, projectionMatrix);
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].halfpixelLocation, halfpixel);
+        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].transformedLocation, ((regularTransformation && useTransparency) ? basicAlpha : 1.0));
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].offsetLocation, float(m_offset / 2.5f));
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].colorMatrixLocation, colorMatrix);
 
@@ -1986,34 +1316,26 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
         read->colorAttachment()->bind();
 
-        // SDF corner clipping: pass blur rect size, per-corner radii, and
-        // modulation (opacity²) to the shader.  The shader multiplies
-        // fragColor by (modulation * sdfAlpha), producing premultiplied
-        // alpha that works with GL_ONE / GL_ONE_MINUS_SRC_ALPHA blending.
-        // Per-corner radii come from Window::borderRadius() (set by Klassy)
-        // so the SDF clip exactly matches the decoration's visual rounding,
-        // including cases where some corners are square (e.g. edge windows).
-        const BorderRadius nativeRadius = windowBorderRadius(w).scaled(viewport.scale()).rounded();
-        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].blurRectSizeLocation,
-            QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
-        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].cornerRadiusLocation, nativeRadius.toVector());
-        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].opacityModLocation, modulation);
-
-        // Always enable premultiplied-alpha blending so the SDF can produce
-        // anti-aliased corners.  When modulation = 1 and cornerRadius = 0
-        // the shader outputs vec4(rgb, 1.0) and blending is a no-op.
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        if (modulation < 1.0) {
+            glEnable(GL_BLEND);
+            glBlendColor(0, 0, 0, modulation);
+            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+        }
 
         vbo->draw(GL_TRIANGLES, 6, vertexCount);
 
-        glDisable(GL_BLEND);
+        if (modulation < 1.0) {
+            glDisable(GL_BLEND);
+        }
 
         ShaderManager::instance()->popShader();
+        glDisable(GL_BLEND);
     }
 
     // Reflection and corner shines
     {
+
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -2030,15 +1352,17 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         GLTexture *reflectTex = m_reflectPass.reflectTexture.get();
         GLTexture *glowTex = !treatAsActive(w) ? m_reflectPass.sideGlowTexture_unfocus.get() : m_reflectPass.sideGlowTexture.get();
         bool enableGlow = shouldHaveCornerGlow(w) && m_enableCornerGlow && glowTex && !opaqueMaximize;
-        // reflect.frag always samples texUnit. Do not enter the pass with an
-        // unbound sampler when the reflection image could not be uploaded;
-        // that path is especially fragile on GLES and software GL.
-        if (reflectTex && m_reflectPass.shader){
+        if (reflectTex || enableGlow){
             ShaderManager::instance()->pushShader(m_reflectPass.shader.get());
 
             QMatrix4x4 projectionMatrix = viewport.projectionMatrix();
             projectionMatrix.translate(scaledBackgroundRect.x(), scaledBackgroundRect.y());
             const auto scale = viewport.scale();
+
+            const auto toXYZ = renderTarget.colorDescription()->containerColorimetry().toXYZ();
+            m_reflectPass.shader->setUniform(GLShader::FloatUniform::Saturation, data.saturation());
+            m_reflectPass.shader->setUniform(GLShader::Vec3Uniform::PrimaryBrightness, QVector3D(toXYZ(1, 0), toXYZ(1, 1), toXYZ(1, 2)));
+            m_reflectPass.shader->setColorspaceUniforms(ColorDescription::sRGB, renderTarget.colorDescription(), RenderingIntent::Perceptual);
 
             m_reflectPass.shader->setUniform(m_reflectPass.mvpMatrixLocation, projectionMatrix);
             m_reflectPass.shader->setUniform(m_reflectPass.screenResolutionLocation, QVector2D(screenSize.width() * scale, screenSize.height() * scale));
@@ -2048,32 +1372,32 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             m_reflectPass.shader->setUniform(m_reflectPass.opacityLocation, float(finalOpacity));
             m_reflectPass.shader->setUniform(m_reflectPass.translateTextureLocation, m_translateTexture ? float(1.0) : float(0.0));
             m_reflectPass.shader->setUniform(m_reflectPass.colorMatrixLocation, colorMatrix);
+            QVector4D vport(viewport.scaledRenderRect().x(), viewport.scaledRenderRect().y(), viewport.scaledRenderRect().width(), viewport.scaledRenderRect().height());
+            m_reflectPass.shader->setUniform(m_reflectPass.viewportLocation, vport);
 
-            // SDF corner clipping: same per-corner parameters as the aero
-            // pass so the reflection and glow texture also respect the
-            // rounded corners.
-            const BorderRadius reflectRadius = windowBorderRadius(w).scaled(viewport.scale()).rounded();
-            m_reflectPass.shader->setUniform(m_reflectPass.blurRectSizeLocation,
-                QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
-            m_reflectPass.shader->setUniform(m_reflectPass.cornerRadiusLocation,
-                reflectRadius.toVector());
+            bool useWayland = effects->waylandDisplay() != nullptr; // Determine whether to flip the textures or not
+            auto renderTexture = renderTarget.texture();
+            if (renderTexture) {
+                auto transformKind = renderTarget.texture()->contentTransform().kind();
+                useWayland = useWayland && (transformKind != OutputTransform::Kind::Normal);
+            }
+            m_reflectPass.shader->setUniform(m_reflectPass.useWaylandLocation, useWayland);
 
             // Glow part
             m_reflectPass.shader->setUniform(m_reflectPass.glowEnableLocation, enableGlow);
             if (enableGlow) {
+                m_reflectPass.shader->setUniform(m_reflectPass.glowEnableLocation, enableGlow);
                 m_reflectPass.shader->setUniform(m_reflectPass.textureSizeLocation, QVector2D(glowTex->width(), glowTex->height()));
                 m_reflectPass.shader->setUniform(m_reflectPass.glowOpacityLocation, float(opacity * 0.8));
 
-                m_reflectPass.shader->setUniform(m_reflectPass.glowTextureLocation, 1);
+                glUniform1i(m_reflectPass.glowTextureLocation, 1);
                 glActiveTexture(GL_TEXTURE1);
                 glowTex->bind();
             }
 
-            m_reflectPass.shader->setUniform(m_reflectPass.reflectTextureLocation, 0);
+            glUniform1i(m_reflectPass.reflectTextureLocation, 0);
             glActiveTexture(GL_TEXTURE0);
-            if (reflectTex) {
-                reflectTex->bind();
-            }
+            reflectTex->bind();
 
             vbo->draw(GL_TRIANGLES, 6, vertexCount);
 
@@ -2087,22 +1411,23 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
 bool BlurEffect::shouldOpaqueColorize(const EffectWindow *w) const
 {
-    const auto windowClasses = w->windowClass().split(' ', Qt::SkipEmptyParts);
-    const QString windowClass = windowClasses.size() > 1 ? windowClasses.at(1) : QString();
+    auto maximizeState = w->window()->maximizeMode();
+    auto maximizedWindowsShareScreen = [&]() -> bool {
+        return std::find_if(m_maximizedWindows.begin(), m_maximizedWindows.end(),
+                            [&](const EffectWindow *a) { return a->screen() == w->screen(); }) != m_maximizedWindows.end();
+    };
+
+    QString windowClass = w->windowClass().split(' ')[1];
 
     bool opaqueMaximize = false;
 
-    if (!w->window()) {
-        return false;
-    }
-
     if(m_maximizeColorization) {
-        opaqueMaximize = isMaximizedWindow(w) && windowClass != "kwin";
+        opaqueMaximize = maximizeState == MaximizeMode::MaximizeFull && windowClass != "kwin";
 
-        if(!hasMaximizedWindowOnCurrentActivity()) opaqueMaximize = false;
+        if(!m_maximizedWindowsInCurrentActivity) opaqueMaximize = false;
         // docks present in the same screen as a maximized window
         // panels, vtp sidebar window, etc
-        else if(w->isDock()) opaqueMaximize = hasMaximizedWindowOnScreen(w);
+        else if(w->isDock()) opaqueMaximize = maximizedWindowsShareScreen();
         // tabbox
         else if(effects->waylandDisplay() && !w->isWaylandClient() && w->window()->resourceName() == "") opaqueMaximize = false;
 
@@ -2119,8 +1444,7 @@ bool BlurEffect::shouldOpaqueColorize(const EffectWindow *w) const
 
 bool BlurEffect::shouldHaveCornerGlow(const EffectWindow *w) const
 {
-    const auto windowClasses = w->windowClass().split(' ', Qt::SkipEmptyParts);
-    const QString windowClass = windowClasses.size() > 1 ? windowClasses.at(1) : QString();
+    QString windowClass = w->windowClass().split(' ')[1];
     if(w->isOnScreenDisplay() || w->isTooltip() || w->isSplash()) return false;
     if(w->caption() == AS_MENUREP || (windowClass != "kwin" && w->isDock())) return false; // Disables panels and start menu
     return true;
@@ -2128,15 +1452,11 @@ bool BlurEffect::shouldHaveCornerGlow(const EffectWindow *w) const
 
 bool BlurEffect::treatAsActive(const EffectWindow *w)
 {
-    const auto windowClasses = w->windowClass().split(' ', Qt::SkipEmptyParts);
-    const QString windowClass = windowClasses.size() > 1 ? windowClasses.at(1) : QString();
-    // When following the Plasma accent color, don't suppress active treatment
-    // for docks (panels) and the start menu so they receive full colorization.
-    if (!m_followPlasmaAccentColor && m_basicColorization && (w->isDock() || w->caption() == AS_MENUREP)) return false;
+    QString windowClass = w->windowClass().split(' ')[1];
+    if (m_basicColorization && (w->isDock() || w->caption() == AS_MENUREP)) return false;
     if(w->caption() == "aeroshell-tabbox" && !w->isManaged()) return true;
-    if(!w->window()) return false;
     if(effects->waylandDisplay() && !w->isWaylandClient() && w->window()->resourceName() == "") return true;
-    return (w->isOnScreenDisplay() || w->isFullScreen() || windowClass == "plasmashell" || windowClass == "org.kde.plasmashell" || windowClass == "kwin" || w == effects->activeWindow());
+    return (w->isOnScreenDisplay() || w->isFullScreen() || windowClass == "plasmashell" || windowClass == "kwin" || w == effects->activeWindow());
 }
 
 bool BlurEffect::isActive() const
@@ -2147,6 +1467,36 @@ bool BlurEffect::isActive() const
 bool BlurEffect::blocksDirectScanout() const
 {
     return false;
+}
+
+void BlurEffect::configureAeroColors()
+{
+    float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
+
+    fH = (float)m_aeroHue;
+    fS = ((float)m_aeroSaturation) / 100.0f;
+    fV = ((float)m_aeroBrightness) / 100.0f;
+
+    HSVtoRGB(fR, fG, fB, fH, fS, fV);
+
+    int primaryBalance, secondaryBalance, blurBalance;
+    getColorBalances(m_aeroIntensity, primaryBalance, secondaryBalance, blurBalance);
+
+    m_aeroPrimaryBalance   = primaryBalance;
+    m_aeroSecondaryBalance = secondaryBalance;
+    m_aeroBlurBalance      = blurBalance;
+    m_aeroPrimaryBalanceInactive = 0.4f * m_aeroPrimaryBalance;
+    m_aeroBlurBalanceInactive = 0.4f * m_aeroBlurBalance + 60;
+
+    m_aeroColorR = fR;
+    m_aeroColorG = fG;
+    m_aeroColorB = fB;
+    m_aeroColorA = (m_aeroIntensity - 26) / 191.0f;
+
+    getMaximizedColorization(m_aeroIntensity, m_aeroColorR, m_aeroColorG, m_aeroColorB, m_aeroColorROpaque, m_aeroColorGOpaque, m_aeroColorBOpaque);
+    if(m_aeroIntensity < 26) {
+        m_aeroColorA = m_aeroIntensity / 255.0f;
+    }
 }
 
 QColor BlurEffect::readPlasmaAccentColor() const
@@ -2197,6 +1547,29 @@ QColor BlurEffect::readPlasmaAccentColor() const
     return QColor();
 }
 
+void BlurEffect::applyPlasmaAccentColor(const QColor &accentColor)
+{
+    if (!accentColor.isValid() || accentColor.alpha() == 0) {
+        return;
+    }
+
+    float fR = accentColor.redF();
+    float fG = accentColor.greenF();
+    float fB = accentColor.blueF();
+    float fH = 0;
+    float fS = 0;
+    float fV = 0;
+    RGBtoHSV(fR, fG, fB, fH, fS, fV);
+
+    // The UI/shader conversion uses the half-open hue range [0, 360).
+    // Rounding a color close to red can otherwise produce 360, which the
+    // conversion helper treats as an invalid sector and turns black.
+    m_aeroHue = qBound(0, qRound(fH), 359);
+    m_aeroSaturation = qRound(fS * 100.0f);
+    m_aeroBrightness = qRound(fV * 100.0f);
+    configureAeroColors();
+}
+
 void BlurEffect::updateAccentFromPlasma()
 {
     if (!m_plasmaAccentColorTimer) {
@@ -2207,7 +1580,7 @@ void BlurEffect::updateAccentFromPlasma()
         return;
     }
 
-    QColor accentColor = readPlasmaAccentColor();
+    const QColor accentColor = readPlasmaAccentColor();
     if (accentColor.isValid()) {
         m_lastPlasmaAccentColor = accentColor;
         applyPlasmaAccentColor(accentColor);
@@ -2226,7 +1599,7 @@ void BlurEffect::slotStartupAccentHeal()
         return;
     }
 
-    QColor accentColor = readPlasmaAccentColor();
+    const QColor accentColor = readPlasmaAccentColor();
     if (!accentColor.isValid()) {
         return;
     }
@@ -2245,7 +1618,7 @@ void BlurEffect::slotPlasmaAccentColorChanged()
 
     // Periodic self-heal (2 s timer) and kdeglobals watcher debounce: restore
     // any colorization state that a KCM handover or an interrupted config
-    // write may have left stale.  The intensity and transparency members are
+    // write may have left stale. The intensity and transparency members are
     // the only accent-independent pieces of the colorization state that the
     // shared memory handover used to be able to overwrite, so re-reading them
     // from kwinrc here makes the effect recover by itself the same way opening
@@ -2256,7 +1629,7 @@ void BlurEffect::slotPlasmaAccentColorChanged()
     bool changed = cfgIntensity != m_aeroIntensity
                 || cfgTransparency != m_transparencyEnabled;
 
-    QColor accentColor = readPlasmaAccentColor();
+    const QColor accentColor = readPlasmaAccentColor();
     if (accentColor.isValid() && accentColor != m_lastPlasmaAccentColor) {
         m_lastPlasmaAccentColor = accentColor;
         applyPlasmaAccentColor(accentColor);

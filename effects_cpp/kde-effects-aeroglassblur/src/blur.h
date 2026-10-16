@@ -9,15 +9,14 @@
 
 #include <effect/effect.h>
 #include <opengl/glutils.h>
-#include <scene/borderradius.h>
 #include <scene/item.h>
 
 #include <KConfigWatcher>
 
-#include <QList>
 #include <QColor>
+#include <QList>
 #include <QSharedMemory>
-#include <QPointer>
+#include <QTimer>
 
 #include <unordered_map>
 
@@ -25,24 +24,6 @@ namespace KWin
 {
 
 class BackgroundEffectItem;
-
-/**
- * Colors handed over by the KCM through the "kwinaero" shared memory segment.
- * The KCM appends a write timestamp so the effect can tell a live preview
- * from a stale segment left behind by a previous session (System-V shared
- * memory survives process exits and is only cleared on reboot).
- */
-struct SharedColorState
-{
-    int hue = 0;
-    int saturation = 0;
-    int brightness = 0;
-    int intensity = 0;
-    bool transparencyEnabled = false;
-    bool skip = false;
-    qint64 timestampMs = 0; ///< 0 when the segment has no timestamp (legacy blob)
-    bool fresh = false;     ///< true when written by a KCM within the freshness window
-};
 
 struct BlurRenderData
 {
@@ -114,23 +95,9 @@ public Q_SLOTS:
 
 private:
     void initBlurStrengthValues();
-    void configureAeroColors();
     RegionF blurRegion(EffectWindow *w) const;
     RegionF decorationBlurRegion(const EffectWindow *w) const;
-    // Geometry of the transparent rect inside the decoration. Reproduces
-    // EffectWindow::decorationInnerRect() (rect() - frameMargins()) using
-    // contentsRect() as the reliable base, since the decoration's border*()
-    // values can lag behind while a window is dragged, resized, or hovered.
-    // When the borders are consistent with contentsRect() (within a few px,
-    // i.e. a genuine client/decoration overlap), the border-derived rect is
-    // used so the decoration blur still covers the 1-3px seam below the title
-    // bar. Otherwise contentsRect() is returned so the title bar keeps its
-    // blur background.
-    QRectF decorationInnerRect(const EffectWindow *w) const;
     bool decorationSupportsBlurBehind(const EffectWindow *w) const;
-    RegionF roundedCornerDecorationRegion(const EffectWindow *w, const RegionF &baseRegion) const;
-    qreal decorationCornerRadius(const EffectWindow *w) const;
-    RegionF roundedWindowRegion(const EffectWindow *w, const RegionF &baseRegion) const;
     bool shouldBlur(const EffectWindow *w, int mask, const WindowPaintData &data) const;
     bool shouldForceBlur(const EffectWindow *w) const;
     bool shouldNotBlur(const EffectWindow *w) const;
@@ -141,17 +108,12 @@ private:
     void blur(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &deviceRegion, WindowPaintData &data);
 
     void ensureReflectTexture();
-    bool readMemory(SharedColorState &state);
+    bool readMemory(bool* skipFunc);
     bool treatAsActive(const EffectWindow *w);
+    void configureAeroColors();
     QColor readPlasmaAccentColor() const;
     void applyPlasmaAccentColor(const QColor &accentColor);
     void updateAccentFromPlasma();
-    bool isMaximizedWindow(const EffectWindow *w) const;
-    bool hasMaximizedWindowOnScreen(const EffectWindow *reference) const;
-    bool hasMaximizedWindowOnCurrentActivity() const;
-    qreal windowCornerRadius(const EffectWindow *w) const;
-    BorderRadius windowBorderRadius(const EffectWindow *w) const;
-    void updateDockBlurRegions(const EffectWindow *changedWindow);
 
 private:
     struct
@@ -169,16 +131,14 @@ private:
         int opacityLocation;
         int translateTextureLocation;
         int reflectTextureLocation;
+        int viewportLocation;
 
         // Glow
         int glowTextureLocation;
         int glowEnableLocation;
         int textureSizeLocation;
+        int useWaylandLocation;
         int glowOpacityLocation;
-
-        // SDF corner clipping
-        int blurRectSizeLocation;
-        int cornerRadiusLocation;
     } m_reflectPass;
     struct
     {
@@ -196,6 +156,7 @@ private:
         int colorMatrixLocation;
         int offsetLocation;
         int halfpixelLocation;
+        int applyInverseColorTransformLocation;
 
     } m_upsamplePass;
 
@@ -206,6 +167,7 @@ private:
         int colorMatrixLocation;
         int offsetLocation;
         int halfpixelLocation;
+        int transformedLocation;
 
         int aeroColorRLocation;
         int aeroColorGLocation;
@@ -214,11 +176,6 @@ private:
         int aeroColorBalanceLocation;
         int aeroAfterglowBalanceLocation;
         int aeroBlurBalanceLocation;
-
-        // SDF corner clipping
-        int blurRectSizeLocation;
-        int cornerRadiusLocation;
-        int opacityModLocation;
     };
     enum AeroPasses { AERO = 0, BASIC, OPAQUE };
     AeroShader m_aeroPasses[3];
@@ -229,9 +186,6 @@ private:
     };
 
     bool m_valid = false;
-    bool m_softwareRenderer = false;
-    bool m_openGLESRenderer = false;
-    bool m_virtualMachine = false;
     RenderView *m_currentView = nullptr;
 
     size_t m_iterationCount; // number of times the texture will be downsized to half size
@@ -256,6 +210,7 @@ private:
 
     QString m_texturePath;
     bool m_translateTexture;
+    bool m_firstTimeConfig = false;
 
     int m_reflectionIntensity;
     int m_aeroIntensity;
@@ -285,6 +240,8 @@ private:
     bool m_enableCornerGlow;
     bool m_followPlasmaAccentColor;
 
+    bool m_maximizedWindowsInCurrentActivity = false;
+
     struct OffsetStruct
     {
         float minOffset;
@@ -304,14 +261,8 @@ private:
 
     QMap<EffectWindow *, QMetaObject::Connection> windowBlurChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> windowExpandedGeometryChangedConnections;
-    QMap<EffectWindow *, QMetaObject::Connection> windowMaximizedStateChangedConnections;
-    QMap<EffectWindow *, QMetaObject::Connection> windowMinimizedChangedConnections;
-    QMap<EffectWindow *, QMetaObject::Connection> windowDecorationChangedConnections;
-    QMap<EffectWindow *, QMetaObject::Connection> decorationBlurRegionChangedConnections;
-    // QPointer: the internal QWindow can be destroyed before slotWindowDeleted
-    // runs; a raw pointer then dangles and removeEventFilter() segfaults.
-    QMap<EffectWindow *, QPointer<QWindow>> windowInternalWindows;
     std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
+    std::list<EffectWindow*> m_maximizedWindows;
 
     QSharedMemory m_sharedMemory;
 
