@@ -3,7 +3,7 @@
 
 Name:           aeroshell-kwin-components
 Version:        45.0.0
-Release:        12%{?dist}
+Release:        13%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -97,6 +97,9 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Sat Oct 17 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-13
+- Fix Start Menu pressing grey bug
+
 * Fri Oct 16 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-12
 - Freeze Updates
 

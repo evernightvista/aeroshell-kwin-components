@@ -147,7 +147,7 @@ BlurEffect::BlurEffect()
         m_downsamplePass.halfpixelLocation = m_downsamplePass.shader->uniformLocation("halfpixel");
     }
 
-    m_upsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture | ShaderTrait::AdjustSaturation | ShaderTrait::TransformColorspace,
+    m_upsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
                                                                               QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                               QStringLiteral(":/effects/aeroblur/shaders/upsample.frag"));
     if (!m_upsamplePass.shader) {
@@ -157,12 +157,11 @@ BlurEffect::BlurEffect()
         m_upsamplePass.mvpMatrixLocation = m_upsamplePass.shader->uniformLocation("modelViewProjectionMatrix");
         m_upsamplePass.offsetLocation = m_upsamplePass.shader->uniformLocation("offset");
         m_upsamplePass.halfpixelLocation = m_upsamplePass.shader->uniformLocation("halfpixel");
-        m_upsamplePass.applyInverseColorTransformLocation = m_upsamplePass.shader->uniformLocation("applyInverseColorTransform");
     }
 
     for(int i = 0; i < 3; i++) {
         qCWarning(KWIN_BLUR) << "Loading shader " << aeroShaderLocations[i];
-        m_aeroPasses[i].shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture | ShaderTrait::AdjustSaturation | ShaderTrait::TransformColorspace,
+        m_aeroPasses[i].shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
                                                                                    QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                                    aeroShaderLocations[i]);
         if (!m_aeroPasses[i].shader) {
@@ -172,7 +171,6 @@ BlurEffect::BlurEffect()
             m_aeroPasses[i].mvpMatrixLocation            = m_aeroPasses[i].shader->uniformLocation("modelViewProjectionMatrix");
             m_aeroPasses[i].offsetLocation               = m_aeroPasses[i].shader->uniformLocation("offset");
             m_aeroPasses[i].halfpixelLocation            = m_aeroPasses[i].shader->uniformLocation("halfpixel");
-            m_aeroPasses[i].transformedLocation          = m_aeroPasses[i].shader->uniformLocation("transformed");
             m_aeroPasses[i].colorMatrixLocation          = m_aeroPasses[i].shader->uniformLocation("colorMatrix");
             m_aeroPasses[i].aeroColorRLocation           = m_aeroPasses[i].shader->uniformLocation("aeroColorR");
             m_aeroPasses[i].aeroColorGLocation           = m_aeroPasses[i].shader->uniformLocation("aeroColorG");
@@ -181,11 +179,15 @@ BlurEffect::BlurEffect()
             m_aeroPasses[i].aeroColorBalanceLocation     = m_aeroPasses[i].shader->uniformLocation("aeroColorBalance");
             m_aeroPasses[i].aeroAfterglowBalanceLocation = m_aeroPasses[i].shader->uniformLocation("aeroAfterglowBalance");
             m_aeroPasses[i].aeroBlurBalanceLocation      = m_aeroPasses[i].shader->uniformLocation("aeroBlurBalance");
+            // SDF corner clipping uniforms
+            m_aeroPasses[i].blurRectSizeLocation          = m_aeroPasses[i].shader->uniformLocation("u_blurRectSize");
+            m_aeroPasses[i].cornerRadiusLocation          = m_aeroPasses[i].shader->uniformLocation("u_cornerRadius");
+            m_aeroPasses[i].opacityModLocation             = m_aeroPasses[i].shader->uniformLocation("u_opacity");
         }
 
     }
 
-    m_reflectPass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture | ShaderTrait::AdjustSaturation | ShaderTrait::TransformColorspace,
+    m_reflectPass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
                                                                              QStringLiteral(":/effects/aeroblur/shaders/vertex.vert"),
                                                                              QStringLiteral(":/effects/aeroblur/shaders/reflect.frag"));
 
@@ -202,14 +204,14 @@ BlurEffect::BlurEffect()
         m_reflectPass.translateTextureLocation = m_reflectPass.shader->uniformLocation("translate");
         m_reflectPass.colorMatrixLocation = m_reflectPass.shader->uniformLocation("colorMatrix");
         m_reflectPass.reflectTextureLocation = m_reflectPass.shader->uniformLocation("texUnit");
-        m_reflectPass.viewportLocation = m_reflectPass.shader->uniformLocation("viewport");
         // Glow
         m_reflectPass.textureSizeLocation = m_reflectPass.shader->uniformLocation("textureSize");
-        m_reflectPass.useWaylandLocation = m_reflectPass.shader->uniformLocation("useWayland");
         m_reflectPass.glowTextureLocation = m_reflectPass.shader->uniformLocation("glowTexture");
         m_reflectPass.glowEnableLocation = m_reflectPass.shader->uniformLocation("glowEnable");
         m_reflectPass.glowOpacityLocation = m_reflectPass.shader->uniformLocation("glowOpacity");
-
+        // SDF corner clipping uniforms
+        m_reflectPass.blurRectSizeLocation = m_reflectPass.shader->uniformLocation("u_blurRectSize");
+        m_reflectPass.cornerRadiusLocation = m_reflectPass.shader->uniformLocation("u_cornerRadius");
     }
 
     m_reflectPass.sideGlowTexture = GLTexture::upload(QPixmap(QStringLiteral(":/effects/aeroblur/framecornereffect.png")));
@@ -586,9 +588,11 @@ void BlurEffect::slotWindowAdded(EffectWindow *w)
         }
     });
 
-    auto maximizeState = w->window()->maximizeMode();
-    if (maximizeState == MaximizeMode::MaximizeFull && !w->isMinimized()) {
-        m_maximizedWindows.push_front(w);
+    if (w->window()) {
+        auto maximizeState = w->window()->maximizeMode();
+        if (maximizeState == MaximizeMode::MaximizeFull && !w->isMinimized()) {
+            m_maximizedWindows.push_front(w);
+        }
     }
 
     if (auto internal = w->internalWindow()) {
@@ -855,6 +859,9 @@ bool BlurEffect::shouldForceBlur(const EffectWindow *w) const
     if ((!m_blurDocks && w->isDock()) || (!m_blurMenus && (w->isMenu() || w->isDropdownMenu() || w->isPopupMenu()))) {
         return false;
     }
+    if (!w->window()) {
+        return false;
+    }
     // For some reason, the Alt+Tab window on Wayland is made up of two windows, one of which is completely empty
     // and has an empty window class, and.. isn't a Wayland client???'
     if (effects->waylandDisplay() && !w->isWaylandClient() && w->window()->resourceName() == "") {
@@ -877,6 +884,9 @@ bool BlurEffect::shouldForceBlur(const EffectWindow *w) const
 
 bool BlurEffect::shouldNotBlur(const EffectWindow *w) const
 {
+    if (!w->window()) {
+        return false;
+    }
     const QString resourceName = w->window()->resourceName();
     const QString resourceClass = w->window()->resourceClass();
 
@@ -943,9 +953,6 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
     if (!winData.isNull()) {
         transformedMatrix = winData.value<QMatrix4x4>();
     }
-
-    const bool scaled = !qFuzzyCompare(data.xScale(), 1.0) && !qFuzzyCompare(data.yScale(), 1.0);
-    bool regularTransformation = winData.isNull() && (mask & Effect::PAINT_WINDOW_TRANSFORMED);
 
     // Compute the effective blur shape. Note that if the window is transformed, so will be the blur shape.
     RegionF blurShape = blurRegion(w);
@@ -1213,13 +1220,6 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
                                       0.5 / (double)read->colorAttachment()->height());
             m_upsamplePass.shader->setUniform(m_upsamplePass.halfpixelLocation, halfpixel);
 
-            const auto toXYZ = renderTarget.colorDescription()->containerColorimetry().toXYZ();
-            m_upsamplePass.shader->setUniform(GLShader::FloatUniform::Saturation, data.saturation());
-            m_upsamplePass.shader->setUniform(GLShader::Vec3Uniform::PrimaryBrightness, QVector3D(toXYZ(1, 0), toXYZ(1, 1), toXYZ(1, 2)));
-            // At the last upsample pass, We need to reverse the brightness and colorspace trnsformation performed by the base shader in order to prevent unintended darkening of the overall blur
-            m_upsamplePass.shader->setColorspaceUniforms(renderTarget.colorDescription(), ColorDescription::sRGB, RenderingIntent::AbsoluteColorimetricNoAdaptation);
-            m_upsamplePass.shader->setUniform(m_upsamplePass.applyInverseColorTransformLocation, i == 2);
-
             read->colorAttachment()->bind();
 
             vbo->draw(GL_TRIANGLES, 0, 6);
@@ -1239,11 +1239,6 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         /*********************
          * COLORIZATION PASS *
          *********************/
-
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
         float basicAlpha = m_aeroIntensity / 255.0f;
 
         float pb = m_aeroPrimaryBalance;
@@ -1280,7 +1275,7 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             selectedPass = AeroPasses::BASIC;
         }
 
-        if (!useTransparency || (regularTransformation && !opaqueMaximize)) {
+        if (!useTransparency) {
             selectedPass = AeroPasses::OPAQUE;
         }
 
@@ -1293,16 +1288,10 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
         const auto &read = renderInfo.framebuffers[1];
 
 
-        const auto toXYZ = renderTarget.colorDescription()->containerColorimetry().toXYZ();
-        m_aeroPasses[selectedPass].shader->setUniform(GLShader::FloatUniform::Saturation, data.saturation());
-        m_aeroPasses[selectedPass].shader->setUniform(GLShader::Vec3Uniform::PrimaryBrightness, QVector3D(toXYZ(1, 0), toXYZ(1, 1), toXYZ(1, 2)));
-        m_aeroPasses[selectedPass].shader->setColorspaceUniforms(ColorDescription::sRGB, renderTarget.colorDescription(), RenderingIntent::Perceptual);
-
         const QVector2D halfpixel(0.5 / (double)read->colorAttachment()->width(),
                                   0.5 / (double)read->colorAttachment()->height());
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].mvpMatrixLocation, projectionMatrix);
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].halfpixelLocation, halfpixel);
-        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].transformedLocation, ((regularTransformation && useTransparency) ? basicAlpha : 1.0));
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].offsetLocation, float(m_offset / 2.5f));
         m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].colorMatrixLocation, colorMatrix);
 
@@ -1316,17 +1305,24 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
         read->colorAttachment()->bind();
 
-        if (modulation < 1.0) {
-            glEnable(GL_BLEND);
-            glBlendColor(0, 0, 0, modulation);
-            glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-        }
+        // SDF corner clipping: pass blur rect size, corner radius, and
+        // modulation (opacity²) to the shader.  The shader multiplies
+        // fragColor by (modulation * sdfAlpha), producing premultiplied
+        // alpha that works with GL_ONE / GL_ONE_MINUS_SRC_ALPHA blending.
+        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].blurRectSizeLocation,
+            QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
+        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].cornerRadiusLocation, 0.0f);
+        m_aeroPasses[selectedPass].shader->setUniform(m_aeroPasses[selectedPass].opacityModLocation, modulation);
+
+        // Always enable premultiplied-alpha blending so the SDF can produce
+        // anti-aliased corners.  When modulation = 1 and cornerRadius = 0
+        // the shader outputs vec4(rgb, 1.0) and blending is a no-op.
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         vbo->draw(GL_TRIANGLES, 6, vertexCount);
 
-        if (modulation < 1.0) {
-            glDisable(GL_BLEND);
-        }
+        glDisable(GL_BLEND);
 
         ShaderManager::instance()->popShader();
         glDisable(GL_BLEND);
@@ -1359,11 +1355,6 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             projectionMatrix.translate(scaledBackgroundRect.x(), scaledBackgroundRect.y());
             const auto scale = viewport.scale();
 
-            const auto toXYZ = renderTarget.colorDescription()->containerColorimetry().toXYZ();
-            m_reflectPass.shader->setUniform(GLShader::FloatUniform::Saturation, data.saturation());
-            m_reflectPass.shader->setUniform(GLShader::Vec3Uniform::PrimaryBrightness, QVector3D(toXYZ(1, 0), toXYZ(1, 1), toXYZ(1, 2)));
-            m_reflectPass.shader->setColorspaceUniforms(ColorDescription::sRGB, renderTarget.colorDescription(), RenderingIntent::Perceptual);
-
             m_reflectPass.shader->setUniform(m_reflectPass.mvpMatrixLocation, projectionMatrix);
             m_reflectPass.shader->setUniform(m_reflectPass.screenResolutionLocation, QVector2D(screenSize.width() * scale, screenSize.height() * scale));
             m_reflectPass.shader->setUniform(m_reflectPass.windowPosLocation, QVector2D(scaledBackgroundRect.x(), scaledBackgroundRect.y()));
@@ -1372,16 +1363,11 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
             m_reflectPass.shader->setUniform(m_reflectPass.opacityLocation, float(finalOpacity));
             m_reflectPass.shader->setUniform(m_reflectPass.translateTextureLocation, m_translateTexture ? float(1.0) : float(0.0));
             m_reflectPass.shader->setUniform(m_reflectPass.colorMatrixLocation, colorMatrix);
-            QVector4D vport(viewport.scaledRenderRect().x(), viewport.scaledRenderRect().y(), viewport.scaledRenderRect().width(), viewport.scaledRenderRect().height());
-            m_reflectPass.shader->setUniform(m_reflectPass.viewportLocation, vport);
 
-            bool useWayland = effects->waylandDisplay() != nullptr; // Determine whether to flip the textures or not
-            auto renderTexture = renderTarget.texture();
-            if (renderTexture) {
-                auto transformKind = renderTarget.texture()->contentTransform().kind();
-                useWayland = useWayland && (transformKind != OutputTransform::Kind::Normal);
-            }
-            m_reflectPass.shader->setUniform(m_reflectPass.useWaylandLocation, useWayland);
+            // SDF corner clipping
+            m_reflectPass.shader->setUniform(m_reflectPass.blurRectSizeLocation,
+                QVector2D(scaledBackgroundRect.width(), scaledBackgroundRect.height()));
+            m_reflectPass.shader->setUniform(m_reflectPass.cornerRadiusLocation, 0.0f);
 
             // Glow part
             m_reflectPass.shader->setUniform(m_reflectPass.glowEnableLocation, enableGlow);
@@ -1411,13 +1397,17 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
 bool BlurEffect::shouldOpaqueColorize(const EffectWindow *w) const
 {
+    if (!w->window()) {
+        return false;
+    }
     auto maximizeState = w->window()->maximizeMode();
     auto maximizedWindowsShareScreen = [&]() -> bool {
         return std::find_if(m_maximizedWindows.begin(), m_maximizedWindows.end(),
                             [&](const EffectWindow *a) { return a->screen() == w->screen(); }) != m_maximizedWindows.end();
     };
 
-    QString windowClass = w->windowClass().split(' ')[1];
+    const auto windowClasses = w->windowClass().split(' ', Qt::SkipEmptyParts);
+    const QString windowClass = windowClasses.size() > 1 ? windowClasses.at(1) : QString();
 
     bool opaqueMaximize = false;
 
@@ -1444,7 +1434,8 @@ bool BlurEffect::shouldOpaqueColorize(const EffectWindow *w) const
 
 bool BlurEffect::shouldHaveCornerGlow(const EffectWindow *w) const
 {
-    QString windowClass = w->windowClass().split(' ')[1];
+    const auto windowClasses = w->windowClass().split(' ', Qt::SkipEmptyParts);
+    const QString windowClass = windowClasses.size() > 1 ? windowClasses.at(1) : QString();
     if(w->isOnScreenDisplay() || w->isTooltip() || w->isSplash()) return false;
     if(w->caption() == AS_MENUREP || (windowClass != "kwin" && w->isDock())) return false; // Disables panels and start menu
     return true;
@@ -1452,11 +1443,16 @@ bool BlurEffect::shouldHaveCornerGlow(const EffectWindow *w) const
 
 bool BlurEffect::treatAsActive(const EffectWindow *w)
 {
-    QString windowClass = w->windowClass().split(' ')[1];
-    if (m_basicColorization && (w->isDock() || w->caption() == AS_MENUREP)) return false;
+    const auto windowClasses = w->windowClass().split(' ', Qt::SkipEmptyParts);
+    const QString windowClass = windowClasses.size() > 1 ? windowClasses.at(1) : QString();
+    // When following the Plasma accent color, don't suppress active treatment
+    // for docks (panels) and the start menu so they receive full colorization
+    // instead of falling through to the gray OPAQUE pass.
+    if (!m_followPlasmaAccentColor && m_basicColorization && (w->isDock() || w->caption() == AS_MENUREP)) return false;
     if(w->caption() == "aeroshell-tabbox" && !w->isManaged()) return true;
+    if(!w->window()) return false;
     if(effects->waylandDisplay() && !w->isWaylandClient() && w->window()->resourceName() == "") return true;
-    return (w->isOnScreenDisplay() || w->isFullScreen() || windowClass == "plasmashell" || windowClass == "kwin" || w == effects->activeWindow());
+    return (w->isOnScreenDisplay() || w->isFullScreen() || windowClass == "plasmashell" || windowClass == "org.kde.plasmashell" || windowClass == "kwin" || w == effects->activeWindow());
 }
 
 bool BlurEffect::isActive() const

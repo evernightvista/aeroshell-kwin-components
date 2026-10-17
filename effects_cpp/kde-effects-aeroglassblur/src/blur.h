@@ -131,14 +131,16 @@ private:
         int opacityLocation;
         int translateTextureLocation;
         int reflectTextureLocation;
-        int viewportLocation;
 
         // Glow
         int glowTextureLocation;
         int glowEnableLocation;
         int textureSizeLocation;
-        int useWaylandLocation;
         int glowOpacityLocation;
+
+        // SDF corner clipping
+        int blurRectSizeLocation;
+        int cornerRadiusLocation;
     } m_reflectPass;
     struct
     {
@@ -156,7 +158,6 @@ private:
         int colorMatrixLocation;
         int offsetLocation;
         int halfpixelLocation;
-        int applyInverseColorTransformLocation;
 
     } m_upsamplePass;
 
@@ -167,7 +168,6 @@ private:
         int colorMatrixLocation;
         int offsetLocation;
         int halfpixelLocation;
-        int transformedLocation;
 
         int aeroColorRLocation;
         int aeroColorGLocation;
@@ -176,6 +176,11 @@ private:
         int aeroColorBalanceLocation;
         int aeroAfterglowBalanceLocation;
         int aeroBlurBalanceLocation;
+
+        // SDF corner clipping
+        int blurRectSizeLocation;
+        int cornerRadiusLocation;
+        int opacityModLocation;
     };
     enum AeroPasses { AERO = 0, BASIC, OPAQUE };
     AeroShader m_aeroPasses[3];
