@@ -39,7 +39,7 @@ BuildRequires:  kf6-kcmutils-devel >= %{KF6_MIN_VERSION}
 BuildRequires:  kf6-ksvg-devel >= %{KF6_MIN_VERSION}
 
 # KWin
-BuildRequires:  kwin-devel
+BuildRequires:  kwin-devel = %{KWIN_VERSION}
 BuildRequires:  qt6-qtbase-private-devel
 BuildRequires:  kdecoration-devel
 
@@ -98,7 +98,10 @@ Development files for %{name}.
 
 %changelog
 * Sun Oct 25 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-2
-- Remove not need Components
+- Remove no need components
+
+* Tue Oct 20 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-1
+- Update to Plasma 6.8.1
 
 * Sat Oct 17 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-13
 - Fix Start Menu pressing grey bug
