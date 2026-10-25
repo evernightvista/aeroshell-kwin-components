@@ -3,7 +3,7 @@
 
 Name:           aeroshell-kwin-components
 Version:        45.0.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
@@ -97,7 +97,7 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
-* Sun Oct 25 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-1
+* Sun Oct 25 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-2
 - Remove not need Components
 
 * Sat Oct 17 2026 KairikiFedora <13278297951@sina.cn> - 45.0.0-13
