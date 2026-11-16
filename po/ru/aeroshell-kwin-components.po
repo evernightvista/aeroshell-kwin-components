@@ -136,12 +136,11 @@ msgid "Follow KDE Plasma accent color"
 msgstr "Следовать цвету акцента KDE Plasma"
 
 #. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:0
-#. i18n: ectx: property (text), widget (QLabel, showAccentColor_label)
+#. i18n: ectx: property (text), widget (QPushButton, showAccentColor_button)
 #: rc.cpp:39
 #, kde-format
-msgctxt "Don't change the HTML markup, just the human-readable text"
-msgid "<a href=\"no\">Change accent color</a>"
-msgstr "<a href=\"no\">Изменить цвет выделения</a>"
+msgid "Change accent color"
+msgstr "Изменить цвет выделения"
 
 #. i18n: file: ./effects_cpp/kde-effects-aeroglassblur/src/kcm/blur_config.ui:292
 #. i18n: ectx: property (text), widget (QCheckBox, kcfg_TranslateTexture)

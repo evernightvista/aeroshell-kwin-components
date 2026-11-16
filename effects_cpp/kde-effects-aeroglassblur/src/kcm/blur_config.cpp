@@ -108,13 +108,16 @@ BlurEffectConfig::BlurEffectConfig(QObject *parent, const KPluginMetaData &data)
 
 	connect(ui.browse_pushButton, SIGNAL(clicked()), this, SLOT(setTexturePath()));
     connect(ui.clear_pushButton, SIGNAL(clicked()), this, SLOT(clearTexturePath()));
-	connect(ui.showAccentColor_label, SIGNAL(linkActivated(QString)), this, SLOT(openColorMixer(QString)));
+	connect(ui.showAccentColor_button, SIGNAL(clicked()), this, SLOT(openColorMixer()));
     connect(ui.kcfg_ReflectionIntensity, SIGNAL(valueChanged(int)), this, SLOT(on_kcfg_ReflectionIntensity_valueChanged(int)));
+    connect(ui.kcfg_AeroIntensity, SIGNAL(valueChanged(int)), this, SLOT(on_kcfg_AeroIntensity_valueChanged(int)));
     connect(ui.kcfg_FirefoxHollowRegion, SIGNAL(checkStateChanged(Qt::CheckState)), this, SLOT(on_kcfg_FirefoxHollowRegion_checkStateChanged(Qt::CheckState)));
     connect(ui.kcfg_FollowPlasmaAccentColor, SIGNAL(stateChanged(int)), this, SLOT(on_kcfg_FollowPlasmaAccentColor_stateChanged(int)));
 
     ui.reflectionLabel->setText(QString::number(ui.kcfg_ReflectionIntensity->value()) + " %" );
+    on_kcfg_AeroIntensity_valueChanged(ui.kcfg_AeroIntensity->value());
     on_kcfg_FirefoxHollowRegion_checkStateChanged(ui.kcfg_FirefoxHollowRegion->checkState());
+
     on_kcfg_FollowPlasmaAccentColor_stateChanged(ui.kcfg_FollowPlasmaAccentColor->checkState());
 
     /*
@@ -149,7 +152,7 @@ BlurEffectConfig::BlurEffectConfig(QObject *parent, const KPluginMetaData &data)
         m_window->setWindowModality(Qt::WindowModality::WindowModal);
     }
 }
-void BlurEffectConfig::openColorMixer(QString str)
+void BlurEffectConfig::openColorMixer()
 {
 	m_window->show();
 }
@@ -166,8 +169,10 @@ void BlurEffectConfig::on_kcfg_FirefoxHollowRegion_checkStateChanged(Qt::CheckSt
 
 void BlurEffectConfig::on_kcfg_FollowPlasmaAccentColor_stateChanged(int state)
 {
-    bool follow = (state == Qt::Checked);
-    ui.showAccentColor_label->setEnabled(!follow);
+    const bool follow = (state == Qt::Checked);
+    ui.showAccentColor_button->setEnabled(!follow);
+    ui.kcfg_EnableTransparency->setEnabled(follow);
+    ui.colorIntensityWidget->setEnabled(follow);
     if (follow) {
         // Read Plasma accent color and apply to sliders
         QColor accentColor = readPlasmaAccentColor();
@@ -292,9 +297,7 @@ void BlurEffectConfig::save()
 
 void BlurEffectConfig::on_kcfg_AeroIntensity_valueChanged(int value)
 {
-    Q_UNUSED(value)
-    //calculateDebugPrint();
-    //save();
+    ui.aeroIntensityLabel->setText(QString::number(value));
 }
 
 void BlurEffectConfig::clearTexturePath()

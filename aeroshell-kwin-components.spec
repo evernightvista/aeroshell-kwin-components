@@ -1,14 +1,14 @@
 %define KF6_MIN_VERSION 6.7.0
-%define KWIN_VERSION 6.8.1
+%define KWIN_VERSION 6.8.3
 
 Name:           aeroshell-kwin-components
 Version:        45.0.1
-Release:        2%{?dist}
+Release:        5%{?dist}
 Summary:        AeroShell KWin components for KDE Plasma
 
 License:        AGPL-3.0-only
 URL:            https://github.com/evernightvista/aeroshell-kwin-components
-Source0:        %{name}.tar.gz
+Source0:        https://github.com/evernightvista/aeroshell-kwin-components/archive/refs/heads/Plasma/6.8.zip
 
 BuildRequires:  cmake >= 3.16
 BuildRequires:  ninja-build
@@ -68,7 +68,7 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 Development files for %{name}.
 
 %prep
-%autosetup -n %{name} -p1
+%autosetup -n %{name}-Plasma-6.8 -p1
 
 %build
 %cmake_kf6 \
@@ -97,6 +97,13 @@ Development files for %{name}.
 %{_datadir}/aeroshell/
 
 %changelog
+* Mon Nov 16 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-5
+- Supports adjusting color intensity and transparency under KDE Plasma accent colors
+- Adjust some UI
+
+* Fri Nov 13 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-4
+- Update to Plasma 6.8.3
+
 * Sun Oct 25 2026 KairikiFedora <13278297951@sina.cn> - 45.0.1-2
 - Remove no need components
 

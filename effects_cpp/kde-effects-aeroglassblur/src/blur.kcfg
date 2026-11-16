@@ -83,7 +83,7 @@
         <default>75</default>
     </entry>
     <entry name="AeroIntensity" type="Int">
-        <default>50</default>
+        <default>107</default>
     </entry>
     <entry name="AeroHue" type="Int">
         <default>0</default>

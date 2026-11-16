@@ -33,7 +33,7 @@ public:
 private Q_SLOTS:
 	void setTexturePath();
 	void clearTexturePath();
-	void openColorMixer(QString str);
+	void openColorMixer();
     void on_kcfg_AeroIntensity_valueChanged(int value);
     void on_kcfg_AeroHue_valueChanged(int value);
     void on_kcfg_AeroSaturation_valueChanged(int value);
